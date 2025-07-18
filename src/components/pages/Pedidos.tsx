@@ -29,6 +29,7 @@ import { jwtDecode } from "jwt-decode";
 import EmptyPedidosError from "./Pedidos/EmptyPedidosError";
 import LoadingExample from "./Loading/Loading";
 import { usePedidosColumns, type Pedido } from "./Pedidos/PedidosColumns";
+import { PedidosLegend } from "./Pedidos/PedidosCompra/PedidosStatus";
 
 interface TokenDecoded {
   exp: number;
@@ -48,12 +49,13 @@ type PeriodFilter =
   | "ultimoAno"
   | "todos";
 
-type SearchType =
+export type SearchType =
   | "numeroPedido"
   | "statusDoPedido"
   | "notaFiscal"
   | "dataLancamentoPedido"
-  | "dataParaEntrega";
+  | "dataParaEntrega"
+  | "pedidosCompra";
 
 const removeDuplicatePedidos = (pedidos: Pedido[]): Pedido[] => {
   const pedidosMap = new Map<string, Pedido>();
@@ -105,11 +107,11 @@ const getUserInternalCode = (): number => {
 
 // Função para calcular o pageSize baseado no tamanho da tela
 const getPageSize = (): number => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const width = window.innerWidth;
     if (width >= 1800) {
       return 10; // Telas grandes (1800px+)
-    }  else {
+    } else {
       return 6; // Telas pequenas
     }
   }
@@ -155,14 +157,14 @@ export const Pedidos: React.FC = () => {
     };
 
     // Adicionar event listener para resize
-    window.addEventListener('resize', handleResize);
-    
+    window.addEventListener("resize", handleResize);
+
     // Configurar o pageSize inicial
     handleResize();
 
     // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -259,7 +261,7 @@ export const Pedidos: React.FC = () => {
 
       // Datas ajustadas para garantir inclusão do dia completo
       const response = await axios.get(
-        "/api/external/Pedidos/consultar-pedidos",
+        "/api/internal/Pedidos/consultar-pedidos",
         {
           params,
           headers: {
@@ -270,6 +272,7 @@ export const Pedidos: React.FC = () => {
 
       let pedidosData =
         response.data.value || response.data.data || response.data;
+
 
       if (Array.isArray(pedidosData)) {
         // Remover duplicatas por numeroPedido (se necessário)
@@ -308,6 +311,7 @@ export const Pedidos: React.FC = () => {
         );
 
         const pedidosUnicos = removeDuplicatePedidos(pedidosData);
+
 
         setAllPedidos(pedidosUnicos);
         setPedidos(pedidosUnicos);
@@ -443,13 +447,22 @@ export const Pedidos: React.FC = () => {
 
   // Efeito para aplicar filtros de texto (número de pedido, status, nota fiscal)
   React.useEffect(() => {
-    if (searchType === "numeroPedido" || searchType === "notaFiscal") {
-      const numericValue = searchValue.replace(/\D/g, "");
-      table.getColumn(searchType)?.setFilterValue(numericValue);
-    } else if (searchType === "statusDoPedido") {
-      table.getColumn(searchType)?.setFilterValue(searchValue);
+  if (searchType === "numeroPedido" || searchType === "notaFiscal") {
+    const numericValue = searchValue.replace(/\D/g, "");
+    table.getColumn(searchType)?.setFilterValue(numericValue);
+  } else if (searchType === "statusDoPedido") {
+    table.getColumn(searchType)?.setFilterValue(searchValue);
+  } else if (searchType === "pedidosCompra") {
+    // Implementar filtro personalizado para pedidos de compra
+    if (searchValue.trim() === "") {
+      // Se não há valor de busca, remover o filtro
+      table.getColumn("pedidosCompra")?.setFilterValue(undefined);
+    } else {
+      // Aplicar filtro personalizado para pedidos de compra
+      table.getColumn("pedidosCompra")?.setFilterValue(searchValue);
     }
-  }, [searchValue, searchType, table]);
+  }
+}, [searchValue, searchType, table]);
 
   const handleBack = () => {
     navigate("/inicio");
@@ -534,6 +547,8 @@ export const Pedidos: React.FC = () => {
         setActiveDateRange={setActiveDateRange}
         fetchPedidosWithDateRange={fetchPedidosWithDateRange}
       />
+
+      <PedidosLegend />
 
       <div className="rounded-md border">
         <Table>
@@ -628,7 +643,9 @@ export const Pedidos: React.FC = () => {
                       <div className="space-y-3">
                         {row.getVisibleCells().map((cell, index) => {
                           // Fixed: Use the helper function to get header text
-                          const header = getColumnHeaderText(cell.column.columnDef);
+                          const header = getColumnHeaderText(
+                            cell.column.columnDef
+                          );
 
                           return (
                             <div
@@ -711,7 +728,6 @@ export const Pedidos: React.FC = () => {
                       </div>
 
                       {/* Footer do Card */}
-                      
                     </div>
                   </TableCell>
                 </TableRow>

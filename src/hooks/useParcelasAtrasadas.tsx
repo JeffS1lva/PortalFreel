@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import axios from "axios";
+import { PedidosCompraCell } from "@/components/pages/Pedidos/PedidosCompra/PedidosModal";
 
 export const useParcelasAtrasadasColumns = () => {
   const navigate = useNavigate();
@@ -101,6 +102,37 @@ export const useParcelasAtrasadasColumns = () => {
         size: 180,
       },
       {
+        accessorKey: "pedidosCompra",
+        header: ({ column }) => {
+          return (
+            <div className="flex items-center justify-center">
+              <Button
+                variant="ghost"
+                onClick={() =>
+                  column.toggleSorting(column.getIsSorted() === "asc")
+                }
+                className="h-10 px-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
+              >
+                Pedidos Compra
+                <ArrowUpDown className="w-4 h-4 ml-2 opacity-50" />
+              </Button>
+            </div>
+          );
+        },
+        cell: ({ row }) => {
+          const pedidos = row.getValue("pedidosCompra") as string;
+          return (
+            <div className="flex items-center justify-center py-2">
+              <PedidosCompraCell pedidos={pedidos} />
+            </div>
+          );
+        },
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+        size: 180,
+      },
+
+      {
         accessorKey: "numeroDocumento",
         header: ({ column }) => {
           return (
@@ -113,7 +145,7 @@ export const useParcelasAtrasadasColumns = () => {
                 className="h-10 px-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
               >
                 <FileText className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" />
-                No Documento
+                Documento
                 <ArrowUpDown className="w-4 h-4 ml-2 opacity-50" />
               </Button>
             </div>
@@ -408,7 +440,7 @@ export const useParcelasAtrasadasColumns = () => {
                         : "bg-primary p-1 gap-1 text-primary-foreground hover:bg-primary/90 cursor-pointer"
                     }`}
                   >
-                    <Eye className="h-4 w-4" /> 
+                    <Eye className="h-4 w-4" />
                     <span className="sr-only">Visualizar</span>
                   </Button>
                 </TooltipTrigger>

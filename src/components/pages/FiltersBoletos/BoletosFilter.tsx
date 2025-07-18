@@ -51,6 +51,7 @@ type FilterType =
   | "nomePN"
   | "cnpj"
   | "numNF"
+  | "pedidosCompra"
   | "dataVencimento";
 
 export function BoletoFilter({
@@ -111,6 +112,11 @@ export function BoletoFilter({
         case "numNF":
           filteredData = filteredData.filter((item) =>
             item.numNF?.toLowerCase().includes(value)
+          );
+          break;
+        case "pedidosCompra":
+          filteredData = filteredData.filter((item) =>
+            item.pedidosCompra?.toLowerCase().includes(value)
           );
           break;
       }
@@ -192,6 +198,8 @@ export function BoletoFilter({
         return "Buscar por CNPJ...";
       case "numNF":
         return "Buscar por número da NF...";
+      case "pedidosCompra":
+        return "Buscar por pedidos de compra...";
       case "dataVencimento":
         return "Selecione um período de vencimento";
       default:
@@ -299,6 +307,7 @@ export function BoletoFilter({
               <SelectGroup>
                 <SelectLabel>Filtrar por</SelectLabel>
                 <SelectItem value="codigoBoleto">Código</SelectItem>
+                <SelectItem value="pedidosCompra">Pedidos de Compra</SelectItem>
                 <SelectItem value="nomePN">Nome</SelectItem>
                 <SelectItem value="cnpj">CNPJ</SelectItem>
                 <SelectItem value="numNF">NF</SelectItem>
@@ -410,6 +419,7 @@ export function BoletoFilter({
                     <SelectItem value="nomePN">Nome</SelectItem>
                     <SelectItem value="cnpj">CNPJ</SelectItem>
                     <SelectItem value="numNF">NF</SelectItem>
+                    <SelectItem value="pedidosCompra">Pedidos</SelectItem>
                     <SelectItem value="dataVencimento">Vencimento</SelectItem>
                   </SelectGroup>
                 </SelectContent>
@@ -468,7 +478,7 @@ export function BoletoFilter({
             )}
             {filterType !== "codigoBoleto" && (
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                {filterType}
+                {filterType === "pedidosCompra" ? "Pedidos" : filterType}
                 <button
                   onClick={() => setFilterType("codigoBoleto")}
                   className="ml-2 hover:bg-purple-200 dark:hover:bg-purple-800 rounded-full p-0.5"

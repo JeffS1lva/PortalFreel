@@ -29,7 +29,8 @@ type SearchType =
   | "statusDoPedido"
   | "notaFiscal"
   | "dataLancamentoPedido"
-  | "dataParaEntrega";
+  | "dataParaEntrega"
+  | "pedidosCompra";
 
 type PeriodFilter =
   | "ontem"
@@ -149,6 +150,8 @@ export const PedidosFilter = ({
     switch (searchType) {
       case "numeroPedido":
         return "Buscar por número do pedido...";
+      case "pedidosCompra":
+        return "Buscar por número do Pedido de Compra...";
       case "statusDoPedido":
         return "Buscar por status do pedido...";
       case "notaFiscal":
@@ -246,6 +249,9 @@ export const PedidosFilter = ({
                 <SelectLabel>Tipo de Busca</SelectLabel>
                 <SelectItem value="numeroPedido">
                   Número do Pedido
+                </SelectItem>
+                <SelectItem value="pedidosCompra">
+                  Pedidos de Compra
                 </SelectItem>
                 <SelectItem value="statusDoPedido">
                   Status do Pedido

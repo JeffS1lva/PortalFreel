@@ -10,7 +10,6 @@ import {
   Eye,
   Package,
   PackageOpen,
-  PackageSearch,
   ShoppingCart,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { PedidosCompraCell } from "./PedidosCompra/PedidosModal";
 
 interface Pedido {
   duplicateCount: React.ReactNode;
@@ -43,7 +43,8 @@ interface Pedido {
   notaFiscal: string;
   chaveNFe: string;
   internalCode: number;
-  statusNotaFiscal?: string; // Nova propriedade adicionada
+  statusNotaFiscal?: string;
+  pedidosCompra: string; // Nova propriedade adicionada
 }
 
 // Função getStatusConfig atualizada
@@ -90,9 +91,9 @@ export const getStatusConfig = (status: string) => {
       config.text = "Indisponível";
       break;
     default:
-      config.classes = "w-32 bg-amber-200 text-gray-800";
-      config.icon = <PackageSearch className="h-3 w-3 mr-1" />;
-      config.text = status || "Pendente";
+      config.classes = "w-32 bg-red-400 text-gray-800  ";
+      config.icon = <Ban className="h-3 w-3 mr-1" />;
+      config.text = status || "Inexistente";
   }
 
   return config;
@@ -407,6 +408,14 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
       },
     },
     {
+      accessorKey: "pedidosCompra",
+      header: "Pedidos Compra",
+      cell: ({ row }) => {
+        const pedidos = row.getValue("pedidosCompra") as string;
+        return <PedidosCompraCell pedidos={pedidos} />;
+      },
+    },
+    {
       accessorKey: "dataLancamentoPedido",
       header: "Data Lanç.",
       cell: ({ row }) => {
@@ -569,7 +578,6 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
           statusNotaFiscal === "Cancelada" || statusNotaFiscal === "Cancelado";
 
         // Log para debug
-       
 
         // Verificamos se temos acesso aos dados para download/visualização
         const hasDownloadAccess =
@@ -885,7 +893,6 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
               ?.addEventListener("click", () => {
                 errorEl.remove();
               });
-
           }
         };
 
@@ -1019,19 +1026,27 @@ export const usePedidosColumns = (): ColumnDef<Pedido>[] => {
         );
       },
     },
-    // Adicione esta nova coluna ao array de colunas (columns) depois da coluna "notaFiscal"
+
     {
       accessorKey: "nomeCliente",
       header: "Cliente",
-      cell: ({ row }) => (
-        <div
-          className="whitespace-nowrap overflow-hidden text-ellipsis flex w-56"
-          title={row.getValue("nomeCliente")}
-        >
-          {row.getValue("nomeCliente")}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const nome: string | null = row.getValue("nomeCliente");
+        if (!nome) return <>-</>;
+
+        const displayName = nome.length > 15 ? `${nome.slice(0, 23)}...` : nome;
+
+        return (
+          <div
+            className="whitespace-nowrap overflow-hidden text-ellipsis flex w-56"
+            title={nome}
+          >
+            {displayName}
+          </div>
+        );
+      },
     },
+
     {
       accessorKey: "estado",
       header: "Estado",

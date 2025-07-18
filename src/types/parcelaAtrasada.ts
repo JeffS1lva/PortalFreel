@@ -14,5 +14,6 @@ export interface ParcelaAtrasada {
   filial: string;
   internalCode: number;
   idRegistro: number;
+  pedidosCompra: string;
 }
 

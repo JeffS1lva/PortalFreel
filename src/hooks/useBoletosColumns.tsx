@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useCallback, useMemo } from "react";
+import { PedidosCompraCell } from "@/components/pages/Pedidos/PedidosCompra/PedidosModal";
 
 interface Parcela {
   codigoBoleto: number;
@@ -36,6 +37,7 @@ interface Parcela {
   chaveNFe: string;
   statusNotaFiscal?: string;
   id: number;
+  pedidosCompra: string;
 }
 
 export const useBoletosColumns = () => {
@@ -376,7 +378,9 @@ export const useBoletosColumns = () => {
 
               {/* Nome cortado no mobile */}
               <span className="sm:hidden">
-                {(String(nome).length > 15 ? String(nome).slice(0, 15) + "..." : String(nome))}
+                {String(nome).length > 15
+                  ? String(nome).slice(0, 15) + "..."
+                  : String(nome)}
               </span>
             </div>
           );
@@ -390,6 +394,14 @@ export const useBoletosColumns = () => {
             {formatCNPJ(row.getValue("cnpj"))}
           </span>
         ),
+      },
+      {
+        accessorKey: "pedidosCompra",
+        header: "Pedidos Compra",
+        cell: ({ row }) => {
+          const pedidos = row.getValue("pedidosCompra") as string;
+          return <PedidosCompraCell pedidos={pedidos} />;
+        },
       },
 
       {

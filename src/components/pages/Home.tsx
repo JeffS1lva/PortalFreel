@@ -83,6 +83,7 @@ export function Init() {
           idRegistro: Number(item.id || item.idRegistro || 0),
           filial: String(item.filial || ""),
           internalCode: Number(item.internalCode || item.codigoVendedor || 0),
+          pedidosCompra: String(item.pedidosCompra || ""),
         };
       });
 

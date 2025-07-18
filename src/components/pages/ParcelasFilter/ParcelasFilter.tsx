@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from "react";
-import { Search, User, FileText, ChevronDown, ChevronUp, Filter, X } from "lucide-react";
+import { Search, User, FileText, ChevronDown, ChevronUp, Filter, X, CalendarSearch, ShoppingBag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,7 @@ import {
 import { parseDate } from "@/utils/boletos/formatters";
 import { DelayPeriodFilter } from "@/components/pages/ParcelasFilter/PeriodFilter";
 
-// Interface para tipagem dos dados
+// Interface para tipagem dos dados - UPDATED to match the main type
 interface ParcelaAtrasada {
   codigoVendedor: number;
   tipoDocumento: string;
@@ -31,13 +31,16 @@ interface ParcelaAtrasada {
   filial: string;
   internalCode: number;
   idRegistro: number;
+  pedidosCompra: string; // ADDED missing property
 }
 
 type FilterType =
   | "codigoParceiroNegocio"
+  | "pedidosCompra"
   | "numeroDocumento"
-  | "dataVencimento";
-
+  | "dataVencimento"
+  | "pedidosCompra";
+  
 interface FilterProps {
   data: ParcelaAtrasada[];
   onFilteredDataChange: (filteredData: ParcelaAtrasada[]) => void;
@@ -217,6 +220,15 @@ const atendeFiltroBusca = (
       return encontrouCodigo || encontrouNome;
     }
 
+    case "pedidosCompra": {
+      const pedidos = normalizeText(item.pedidosCompra);
+      
+      // Busca nos pedidos de compra
+      const encontrouPedidos = pedidos.includes(searchNormalized);
+      
+      return encontrouPedidos;
+    }
+
     case "numeroDocumento": {
       const numeroDoc = normalizeText(item.numeroDocumento);
       const idDoc = normalizeText(item.idDocumento);
@@ -275,6 +287,12 @@ const ParcelasFilter: React.FC<FilterProps> = ({
       placeholder: "Buscar por código ou nome do cliente...",
     },
     {
+      value: "pedidosCompra" as FilterType,
+      label: "Pedidos de Compra",
+      icon: ShoppingBag,
+      placeholder: "Buscar por pedidos de compra...",
+    },
+    {
       value: "numeroDocumento" as FilterType,
       label: "Nº Documento",
       icon: FileText,
@@ -283,7 +301,7 @@ const ParcelasFilter: React.FC<FilterProps> = ({
     {
       value: "dataVencimento" as FilterType,
       label: "Data Vencimento",
-      icon: FileText,
+      icon: CalendarSearch,
       placeholder: "Buscar por data de vencimento (DD/MM/AAAA)...",
     },
   ];

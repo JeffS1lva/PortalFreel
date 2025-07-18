@@ -15,4 +15,5 @@ export interface Parcela {
   chaveNFe?: string;
   statusNotaFiscal?: string;
   id: number;
+  pedidosCompra: string;
 }

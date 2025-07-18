@@ -12,6 +12,7 @@ import { parseDate } from "@/utils/boletos/formatters";
 
 // Interface para ParcelaAtrasada
 interface ParcelaAtrasada {
+  pedidosCompra: string;
   codigoVendedor: number;
   tipoDocumento: string;
   idDocumento: string;
