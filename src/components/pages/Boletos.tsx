@@ -29,7 +29,7 @@ import { BoletoFilter } from "./FiltersBoletos/BoletosFilter";
 import { useState, useEffect, useMemo } from "react";
 import { Parcela } from "../../types/parcela";
 import EmptyBoletosError from "./FiltersBoletos/EmptyBoletosError";
-import LoadingExample from "./Loading/Loading";
+import FloatingLoading from "./Loading/Loading";
 import { jwtDecode } from "jwt-decode";
 
 interface TokenDecoded {
@@ -410,7 +410,7 @@ export const Boletos: React.FC = () => {
   };
 
   if (loading) {
-    return <LoadingExample message="Carregando Boletos..." />;
+    return <FloatingLoading/>;
   }
 
   if (error === "empty") {

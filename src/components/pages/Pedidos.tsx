@@ -22,12 +22,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Paginacao } from "./Paginacao";
-import { format, subDays, subYears, startOfDay, endOfDay } from "date-fns";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { PedidosFilter } from "./Pedidos/PedidosFilter";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import EmptyPedidosError from "./Pedidos/EmptyPedidosError";
-import LoadingExample from "./Loading/Loading";
+import FloatingLoading from "./Loading/Loading";
 import { usePedidosColumns, type Pedido } from "./Pedidos/PedidosColumns";
 import { PedidosLegend } from "./Pedidos/PedidosCompra/PedidosStatus";
 
@@ -43,11 +43,7 @@ type PeriodFilter =
   | "ultimos3Dias"
   | "ultimos7Dias"
   | "ultimos15Dias"
-  | "ultimoMes"
-  | "ultimos60Dias"
-  | "ultimos90Dias"
-  | "ultimoAno"
-  | "todos";
+  | "ultimos45Dias"
 
 export type SearchType =
   | "numeroPedido"
@@ -261,7 +257,7 @@ export const Pedidos: React.FC = () => {
 
       // Datas ajustadas para garantir inclusão do dia completo
       const response = await axios.get(
-        "/api/internal/Pedidos/consultar-pedidos",
+        "/api/external/Pedidos/consultar-pedidos",
         {
           params,
           headers: {
@@ -272,7 +268,6 @@ export const Pedidos: React.FC = () => {
 
       let pedidosData =
         response.data.value || response.data.data || response.data;
-
 
       if (Array.isArray(pedidosData)) {
         // Remover duplicatas por numeroPedido (se necessário)
@@ -311,7 +306,6 @@ export const Pedidos: React.FC = () => {
         );
 
         const pedidosUnicos = removeDuplicatePedidos(pedidosData);
-
 
         setAllPedidos(pedidosUnicos);
         setPedidos(pedidosUnicos);
@@ -403,29 +397,9 @@ export const Pedidos: React.FC = () => {
         startDate = subDays(hoje, 14);
         break;
 
-      case "ultimoMes":
-        // Último mês (30 dias)
-        startDate = subDays(hoje, 29);
-        break;
-
-      case "ultimos60Dias":
+      case "ultimos45Dias":
         // Últimos 60 dias (2 meses)
-        startDate = subDays(hoje, 59);
-        break;
-
-      case "ultimos90Dias":
-        // Últimos 90 dias (3 meses)
-        startDate = subDays(hoje, 89);
-        break;
-
-      case "ultimoAno":
-        // Último ano
-        startDate = subYears(hoje, 1);
-        break;
-
-      case "todos":
-        // Últimos dois anos
-        startDate = subYears(hoje, 2);
+        startDate = subDays(hoje, 45);
         break;
 
       default:
@@ -447,22 +421,22 @@ export const Pedidos: React.FC = () => {
 
   // Efeito para aplicar filtros de texto (número de pedido, status, nota fiscal)
   React.useEffect(() => {
-  if (searchType === "numeroPedido" || searchType === "notaFiscal") {
-    const numericValue = searchValue.replace(/\D/g, "");
-    table.getColumn(searchType)?.setFilterValue(numericValue);
-  } else if (searchType === "statusDoPedido") {
-    table.getColumn(searchType)?.setFilterValue(searchValue);
-  } else if (searchType === "pedidosCompra") {
-    // Implementar filtro personalizado para pedidos de compra
-    if (searchValue.trim() === "") {
-      // Se não há valor de busca, remover o filtro
-      table.getColumn("pedidosCompra")?.setFilterValue(undefined);
-    } else {
-      // Aplicar filtro personalizado para pedidos de compra
-      table.getColumn("pedidosCompra")?.setFilterValue(searchValue);
+    if (searchType === "numeroPedido" || searchType === "notaFiscal") {
+      const numericValue = searchValue.replace(/\D/g, "");
+      table.getColumn(searchType)?.setFilterValue(numericValue);
+    } else if (searchType === "statusDoPedido") {
+      table.getColumn(searchType)?.setFilterValue(searchValue);
+    } else if (searchType === "pedidosCompra") {
+      // Implementar filtro personalizado para pedidos de compra
+      if (searchValue.trim() === "") {
+        // Se não há valor de busca, remover o filtro
+        table.getColumn("pedidosCompra")?.setFilterValue(undefined);
+      } else {
+        // Aplicar filtro personalizado para pedidos de compra
+        table.getColumn("pedidosCompra")?.setFilterValue(searchValue);
+      }
     }
-  }
-}, [searchValue, searchType, table]);
+  }, [searchValue, searchType, table]);
 
   const handleBack = () => {
     navigate("/inicio");
@@ -478,7 +452,7 @@ export const Pedidos: React.FC = () => {
   };
 
   if (loading) {
-    return <LoadingExample message="Carregando Pedidos..." />;
+    return <FloatingLoading />;
   }
 
   if (error === "empty") {

@@ -69,24 +69,19 @@ export function BoletoButton({
     return isExpired;
   }, [parcelaData, dataVencimento]);
 
-  // DEBUG: Log dos status recebidos
-  console.log('Status recebido:', status);
-  console.log('ParcelaData status:', parcelaData?.statusPagamento);
+  
   
   const statusAtual = (parcelaData?.statusPagamento || status || "").toLowerCase().trim();
-  console.log('Status atual processado:', statusAtual);
 
   // Verificar status de pagamento
   const isPaid = ["baixado", "pago", "quitado", "liquidado"].some(s => {
     const includes = statusAtual.includes(s);
-    console.log(`Verificando se "${statusAtual}" inclui "${s}" (isPaid):`, includes);
     return includes;
   });
 
   // Verificar status cancelado
   const isCancelled = ["cancelado", "cancelada"].some(s => {
     const includes = statusAtual.includes(s);
-    console.log(`Verificando se "${statusAtual}" inclui "${s}" (isCancelled):`, includes);
     return includes;
   });
 
@@ -94,11 +89,9 @@ export function BoletoButton({
   const statusValidos = ["gerado", "rejeitado", "confirmado", "remessa", "pendente"];
   const isPending = statusValidos.some(s => {
     const includes = statusAtual.includes(s);
-    console.log(`Verificando se "${statusAtual}" inclui "${s}" (isPending):`, includes);
     return includes;
   });
 
-  console.log('isPending final:', isPending);
 
   const hasId = parcelaId !== null && parcelaId !== undefined;
   const hasCodigoBoleto = boletoId !== null && boletoId !== undefined && boletoId !== "";
@@ -109,15 +102,7 @@ export function BoletoButton({
   // E deve ter status pendente ou similar para estar disponível
   const boletoAvailable = hasId && hasCodigoBoleto && !isExpired && !isPaid && !isCancelled && isPending;
 
-  // DEBUG: Log das condições finais
-  console.log('Condições do boletoAvailable:');
-  console.log('- hasId:', hasId);
-  console.log('- hasCodigoBoleto:', hasCodigoBoleto);  
-  console.log('- !isExpired:', !isExpired);
-  console.log('- !isPaid:', !isPaid);
-  console.log('- !isCancelled:', !isCancelled);
-  console.log('- isPending:', isPending);
-  console.log('- boletoAvailable:', boletoAvailable);
+ 
 
   // Definir tooltip específico para cada situação
   const getTooltipText = () => {
@@ -179,7 +164,7 @@ export function BoletoButton({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="bottomPassword"
+            variant="default"
             size="icon"
             className={`h-8 w-8 ${isCancelled
                 ? "bg-red-600 hover:bg-red-800 text-white cursor-not-allowed opacity-80"

@@ -2,6 +2,8 @@
 
 @plugin "tailwindcss-animate";
 
+@custom-variant hover (&:hover);
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -143,6 +145,18 @@
   background: transparent;
 }
 
+@keyframes slide-left {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-6px);
+  }
+}
+
+.animate-slide-left {
+  animation: slide-left 1.2s ease-in-out infinite;
+}
 
 
 

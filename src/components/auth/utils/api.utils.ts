@@ -117,14 +117,12 @@ export const makeApiCallWithFallbackShowErrors = async (
   timeout: number = 20000
 ): Promise<ApiResponse> => {
   try {
-    // Try internal API first (sem flag de fallback)
     const response = await axios.post(internalEndpoint, data, {
       headers: { "Content-Type": "application/json" },
       timeout,
     });
     return response;
   } catch (internalError) {
-    // Fallback to external API (sem flag de fallback)
     const response = await axios.post(externalEndpoint, data, {
       headers: { "Content-Type": "application/json" },
       timeout,

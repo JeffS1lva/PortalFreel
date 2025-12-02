@@ -74,7 +74,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: isFirstAccess ? 50 : -50 }}
         transition={{ duration: 0.4, ease: "easeInOut" }}
-        className="w-full"
+        className="w-full "
       >
         <LoginFormFields
           isFirstAccess={isFirstAccess}

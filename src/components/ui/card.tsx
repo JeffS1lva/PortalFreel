@@ -15,6 +15,32 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+export function CustomCardCotacoes({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card"
+      className={cn(
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export function CustomCardCotacao({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card"
+      className={cn(
+        " text-card-foreground flex flex-col gap-6 rounded-xl   ",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
 export function CustomCard({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div

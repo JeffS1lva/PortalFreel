@@ -432,7 +432,7 @@ export const useParcelasAtrasadasColumns = () => {
                 <TooltipTrigger asChild>
                   <Button
                     onClick={handleViewDANFE}
-                    variant="bottomPassword"
+                    variant="default"
                     disabled={!hasDownloadAccess}
                     className={` h-8 w-8 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background  p-0 ${
                       !hasDownloadAccess

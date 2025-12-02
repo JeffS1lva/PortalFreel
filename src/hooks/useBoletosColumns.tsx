@@ -483,7 +483,7 @@ export const useBoletosColumns = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="bottomPassword"
+                      variant="default"
                       size="icon"
                       className={`h-8 w-8 ${
                         isNotaCancelled

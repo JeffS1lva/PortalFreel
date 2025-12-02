@@ -80,11 +80,7 @@ export const atendeFiltroDiasAtraso = (
   item: ParcelaAtrasada,
   filtro: string
 ): boolean => {
-  console.log(
-    `Verificando filtro: ${filtro} para item com ${
-      item?.diasAtraso || "N/A"
-    } dias de atraso`
-  );
+  
 
   if (filtro === "all") return true;
 
@@ -116,9 +112,7 @@ export const filterParcelasByDelayPeriod = (
   parcelas: ParcelaAtrasada[],
   delayFilter: string
 ): ParcelaAtrasada[] => {
-  console.log(
-    `Filtrando ${parcelas?.length || 0} parcelas com filtro: ${delayFilter}`
-  );
+  
 
   if (!Array.isArray(parcelas)) {
     console.warn("Parcelas não é um array:", parcelas);
@@ -138,20 +132,15 @@ export const filterParcelasByDelayPeriod = (
 
       const atende = atendeFiltroDiasAtraso(parcela, delayFilter);
       if (atende) {
-        console.log(
-          `Parcela aprovada no filtro: Doc ${parcela.numeroDocumento}, ${parcela.diasAtraso} dias`
-        );
+        
       }
       return atende;
     } catch (error) {
-      console.error("Erro ao filtrar parcela:", parcela, error);
       return false;
     }
   });
 
-  console.log(
-    `Resultado da filtragem: ${parcelasFiltradas.length} parcelas encontradas`
-  );
+  
   return parcelasFiltradas;
 };
 
@@ -172,7 +161,6 @@ export const DelayPeriodFilter: React.FC<DelayPeriodFilterProps> = ({
   selectClassName = "w-[200px]",
 }) => {
   const handleValueChange = (value: string) => {
-    console.log(`Filtro selecionado: ${value}`);
     onDelayPeriodChange(value);
   };
 
@@ -219,12 +207,10 @@ export const useDelayPeriodFilter = (
   }, [parcelas]);
 
   const filteredParcelas = React.useMemo(() => {
-    console.log(`Hook: Filtrando com período ${selectedDelayPeriod}`);
     const resultado = filterParcelasByDelayPeriod(
       parcelasComDiasAtraso,
       selectedDelayPeriod
     );
-    console.log(`Hook: ${resultado.length} parcelas após filtro`);
     return resultado;
   }, [parcelasComDiasAtraso, selectedDelayPeriod]);
 

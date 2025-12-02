@@ -98,7 +98,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       <DialogFooter>
         <Button
           type="button"
-          variant={"bottomPassword"}
+          variant={"default"}
           onClick={handleForgotPassword}
           disabled={isProcessing}
           className="relative"

@@ -11,7 +11,7 @@ export const PedidosLegend = () => {
   return (
     <div>
       <Button
-        variant="ButtonStatus"
+        variant="default"
         onClick={() => setExpanded(!expanded)}
         className="mb-2"
       >

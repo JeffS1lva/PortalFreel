@@ -54,7 +54,6 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({
       const storedConsent = localStorage.getItem("cookieConsent");
       
       if (!storedConsent) {
-        console.log("Cookie Consent: Nenhum consentimento encontrado");
         return false;
       }
 
@@ -64,25 +63,21 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({
 
       // Verificar se o consentimento expirou
       if (expiryDate <= currentDate) {
-        console.log("Cookie Consent: Consentimento expirado, removendo");
         localStorage.removeItem("cookieConsent");
         return false;
       }
 
       // Verificar se a versão da política mudou
       if (consentData.version && consentData.version !== policyVersion) {
-        console.log("Cookie Consent: Versão da política mudou, solicitando novo consentimento");
         localStorage.removeItem("cookieConsent");
         return false;
       }
 
       // Consentimento válido encontrado
-      console.log("Cookie Consent: Consentimento válido encontrado");
       setPreferences(consentData.preferences || { necessary: true });
       return consentData.accepted;
 
     } catch (error) {
-      console.error("Cookie Consent: Erro ao verificar consentimento armazenado:", error);
       localStorage.removeItem("cookieConsent");
       return false;
     }
@@ -102,9 +97,7 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({
       };
 
       localStorage.setItem("cookieConsent", JSON.stringify(consentData));
-      console.log(`Cookie Consent: Consentimento salvo por ${validityDays} dias`);
     } catch (error) {
-      console.error("Cookie Consent: Erro ao salvar consentimento:", error);
     }
   };
 

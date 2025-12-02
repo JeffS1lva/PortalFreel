@@ -18,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, ChevronDown, ChevronUp, Filter, X } from "lucide-react";
+import { CalendarIcon, ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { CustomCalendar } from "./CustomCalendar";
 import { useState } from "react";
@@ -38,11 +38,7 @@ type PeriodFilter =
   | "ultimos3Dias"
   | "ultimos7Dias"
   | "ultimos15Dias"
-  | "ultimoMes"
-  | "ultimos60Dias"
-  | "ultimos90Dias"
-  | "ultimoAno"
-  | "todos";
+  | "ultimos45Dias";
 
 interface PedidosFilterProps {
   searchType: SearchType;
@@ -247,22 +243,14 @@ export const PedidosFilter = ({
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Tipo de Busca</SelectLabel>
-                <SelectItem value="numeroPedido">
-                  Número do Pedido
-                </SelectItem>
-                <SelectItem value="pedidosCompra">
-                  Pedidos de Compra
-                </SelectItem>
-                <SelectItem value="statusDoPedido">
-                  Status do Pedido
-                </SelectItem>
+                <SelectItem value="numeroPedido">Número do Pedido</SelectItem>
+                <SelectItem value="pedidosCompra">Pedidos de Compra</SelectItem>
+                <SelectItem value="statusDoPedido">Status do Pedido</SelectItem>
                 <SelectItem value="notaFiscal">Nota Fiscal</SelectItem>
                 <SelectItem value="dataLancamentoPedido">
                   Data de Lançamento
                 </SelectItem>
-                <SelectItem value="dataParaEntrega">
-                  Data de Entrega
-                </SelectItem>
+                <SelectItem value="dataParaEntrega">Data de Entrega</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -270,9 +258,7 @@ export const PedidosFilter = ({
           {/* Seletor de período */}
           <Select
             value={currentPeriodFilter}
-            onValueChange={(value) =>
-              applyPeriodFilter(value as PeriodFilter)
-            }
+            onValueChange={(value) => applyPeriodFilter(value as PeriodFilter)}
           >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecione o período" />
@@ -284,24 +270,8 @@ export const PedidosFilter = ({
                 <SelectItem value="ontem">Ontem</SelectItem>
                 <SelectItem value="ultimos3Dias">Últimos 3 Dias</SelectItem>
                 <SelectItem value="ultimos7Dias">Últimos 7 Dias</SelectItem>
-                <SelectItem value="ultimos15Dias">
-                  Últimos 15 Dias
-                </SelectItem>
-              </SelectGroup>
-              <SelectGroup>
-                <SelectLabel>Período Mensal</SelectLabel>
-                <SelectItem value="ultimoMes">Último Mês</SelectItem>
-                <SelectItem value="ultimos60Dias">
-                  Últimos 60 Dias
-                </SelectItem>
-                <SelectItem value="ultimos90Dias">
-                  Últimos 90 Dias
-                </SelectItem>
-              </SelectGroup>
-              <SelectGroup>
-                <SelectLabel>Período Anual</SelectLabel>
-                <SelectItem value="ultimoAno">Último Ano</SelectItem>
-                <SelectItem value="todos">Últimos Dois Anos</SelectItem>
+                <SelectItem value="ultimos15Dias">Últimos 15 Dias</SelectItem>
+                <SelectItem value="ultimos45Dias">Últimos 45 Dias</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -371,7 +341,9 @@ export const PedidosFilter = ({
       </div>
 
       {/* Conteúdo dos filtros avançados - Apenas mobile */}
-      <div className={`lg:hidden space-y-4 ${!isFiltersExpanded ? "hidden" : ""}`}>
+      <div
+        className={`lg:hidden space-y-4 ${!isFiltersExpanded ? "hidden" : ""}`}
+      >
         <div className="space-y-4 p-4 bg-white dark:bg-gray-900 rounded-lg border">
           {/* Seção de Seletores */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -435,72 +407,15 @@ export const PedidosFilter = ({
                     <SelectItem value="ultimos15Dias">
                       Últimos 15 Dias
                     </SelectItem>
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Período Mensal</SelectLabel>
-                    <SelectItem value="ultimoMes">Último Mês</SelectItem>
-                    <SelectItem value="ultimos60Dias">
-                      Últimos 60 Dias
+                    <SelectItem value="ultimos45Dias">
+                      Últimos 45 Dias
                     </SelectItem>
-                    <SelectItem value="ultimos90Dias">
-                      Últimos 90 Dias
-                    </SelectItem>
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Período Anual</SelectLabel>
-                    <SelectItem value="ultimoAno">Último Ano</SelectItem>
-                    <SelectItem value="todos">Últimos Dois Anos</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
           </div>
         </div>
-
-        {/* Indicadores de filtros ativos */}
-        {(searchValue ||
-          dateFrom ||
-          dateTo ||
-          currentPeriodFilter !== "todos") && (
-          <div className="flex flex-wrap gap-2 pb-3">
-            {searchValue && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                {searchValue}
-                <button
-                  onClick={() => setSearchValue("")}
-                  className="ml-2 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-            {dateFrom && dateTo && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                {format(dateFrom, "dd/MM")} - {format(dateTo, "dd/MM")}
-                <button
-                  onClick={() => {
-                    setDateFrom(undefined);
-                    setDateTo(undefined);
-                  }}
-                  className="ml-2 hover:bg-green-200 dark:hover:bg-green-800 rounded-full p-0.5"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-            {currentPeriodFilter !== "todos" && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                {currentPeriodFilter}
-                <button
-                  onClick={() => applyPeriodFilter("todos")}
-                  className="ml-2 hover:bg-purple-200 dark:hover:bg-purple-800 rounded-full p-0.5"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

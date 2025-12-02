@@ -5,7 +5,7 @@ import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { DashboardAnalytics } from "./HomeDash/DashBoardAnalytics";
 import { NavigationAndContacts } from "./HomeDash/NavigateAndContacts";
-import LoadingExample from "./Loading/Loading";
+import FloatingLoading from "@/components/pages/Loading/Loading"
 
 interface TokenDecoded {
   exp: number;
@@ -154,7 +154,6 @@ export function Init() {
       setParcelasAtrasadas(normalizedData);
       setError(null);
     } catch (err) {
-      console.error("Erro ao carregar dados:", err);
 
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
@@ -199,7 +198,7 @@ export function Init() {
   }, [carregarDadosApi]);
 
   if (loading) {
-    return <LoadingExample message="Carregando Dashboard..." />;
+    return <FloatingLoading  />;
   }
 
   if (error) {
@@ -221,7 +220,7 @@ export function Init() {
   }
 
   return (
-    <div className="w-full px-3 md:px-6 lg:px-8 max-w-screen-2xl mx-auto">
+    <div className="w-full px-3 md:px-6 lg:px-8 max-w-screen-2xl mx-auto ">
       <DashboardAnalytics parcelas={parcelasAtrasadas} />
       <hr className="my-6 border-t border-gray-200 dark:border-gray-700" />
       <NavigationAndContacts />

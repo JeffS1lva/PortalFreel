@@ -26,7 +26,7 @@ import { Paginacao } from "@/components/pages/Paginacao";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ParcelaAtrasada } from "@/types/parcelaAtrasada";
-import LoadingExample from "./Loading/Loading";
+import FloatingLoading from "./Loading/Loading";
 import { jwtDecode } from "jwt-decode";
 import ParcelasFilter from "./ParcelasFilter/ParcelasFilter";
 import { filterParcelasByDelayPeriod } from "@/components/pages/ParcelasFilter/PeriodFilter";
@@ -590,7 +590,7 @@ export const ParcelasAtrasadas: React.FC = () => {
 
   // ========== CONDITIONAL RENDERING ==========
   if (loading) {
-    return <LoadingExample message="Carregando Parcelas em Atraso..." />;
+    return <FloatingLoading />;
   }
 
   if (error && error !== "empty") {
