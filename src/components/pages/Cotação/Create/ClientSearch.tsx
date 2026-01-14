@@ -236,9 +236,9 @@ export function ClientSearch({
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("Status da resposta:", response.status);
-      console.log("Headers completos:", response.headers);
-      console.log("Dados brutos retornados (response.data):", response.data);
+      //console.log("Status da resposta:", response.status);
+      //console.log("Headers completos:", response.headers);
+      //console.log("Dados brutos retornados (response.data):", response.data);
 
       const clientsData =
         response.data.value || response.data.data || response.data;

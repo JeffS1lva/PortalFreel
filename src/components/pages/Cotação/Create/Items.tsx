@@ -186,6 +186,7 @@ export function Items({
       });
 
       const filteredData: PriceItem[] = response.data;
+      //console.log("Itens recebidos da API:", filteredData);
       setSearchResults(filteredData);
       setShowSuggestions(filteredData.length > 0);
     } catch (error) {
@@ -221,7 +222,6 @@ export function Items({
 
       const newData: Partial<ExtendedDocumentLine> = {
         ItemCode: item.itemCode ?? "",
-        U_SKILL_NP: item.itemName ?? "",
         MeasureUnit: unMedida,
         Quantity: 1,
         DiscountPercent: item.DiscountPercent,
@@ -241,11 +241,7 @@ export function Items({
         preco: preco,
       };
 
-      console.log("%c[APP] Dados que serão adicionados ao item:", "color: #3b82f6; font-weight: bold;", {
-    ...newData,
-    correctUsage,
-    bplId,
-  });
+      
 
       setNewItemData(newData);
       setShowSuggestions(false);
@@ -292,9 +288,8 @@ export function Items({
   const finalData: Partial<ExtendedDocumentLine> = {
     ...newItemData,
     ItemCode: newItemData.itemCode ?? newItemData.ItemCode ?? "",
-    U_SKILL_NP: newItemData.itemName ?? newItemData.U_SKILL_NP ?? "",
     itemCode: newItemData.itemCode ?? newItemData.ItemCode ?? "",
-    itemName: newItemData.itemName ?? newItemData.U_SKILL_NP ?? "",
+    itemName: newItemData.itemName ?? "",
     Quantity: roundTo2(newItemData.Quantity ?? 0),
     DiscountPercent: roundTo2(newItemData.DiscountPercent ?? 0),
     MeasureUnit: newItemData.unMedida ?? "Caixa c/20",
@@ -933,7 +928,7 @@ export function Items({
                   className="bg-card backdrop-blur-md rounded-2xl border-2 border-border/50 overflow-hidden hover:border-primary/50 transition-all shadow-lg hover:shadow-xl"
                   role="listitem"
                   aria-label={`Item ${index + 1}: ${
-                    line.itemName ?? line.U_SKILL_NP
+                    line.itemName
                   }`}
                 >
                   <div className="p-6">
@@ -947,7 +942,7 @@ export function Items({
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-lg text-card-foreground truncate">
-                          {line.itemName ?? line.U_SKILL_NP ?? "Sem nome"}
+                          {line.itemName ??  "Sem nome"}
                         </h3>
                         <p className="text-sm text-muted-foreground truncate">
                           Cód: {line.itemCode ?? line.ItemCode ?? "N/A"}
@@ -998,7 +993,7 @@ export function Items({
                         onClick={() => handleViewItem(index)}
                         className="flex-1  transition-all cursor-pointer"
                         aria-label={`Visualizar detalhes do item ${
-                          line.itemName ?? line.U_SKILL_NP
+                          line.itemName 
                         }`}
                       >
                         <Eye className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -1010,7 +1005,7 @@ export function Items({
                         onClick={() => handleEditItem(index)}
                         className="flex-1 transition-all"
                         aria-label={`Editar item ${
-                          line.itemName ?? line.U_SKILL_NP
+                          line.itemName 
                         }`}
                       >
                         <Edit3 className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -1023,7 +1018,7 @@ export function Items({
                         onClick={() => removeDocumentLine(index)}
                         className="hover:scale-105 transition-all"
                         aria-label={`Remover item ${
-                          line.itemName ?? line.U_SKILL_NP
+                          line.itemName 
                         }`}
                       >
                         <TrashIcon className="h-4 w-4" aria-hidden="true" />
@@ -1153,7 +1148,7 @@ export function Items({
                                 </div>
                                 <p className="text-sm sm:text-base text-muted-foreground font-medium truncate">
                                   {line.itemName ??
-                                    line.U_SKILL_NP ??
+                                    
                                     "Sem descrição"}
                                 </p>
                                 <p className="text-xs sm:text-sm text-muted-foreground/70 mt-1">
@@ -1237,7 +1232,7 @@ export function Items({
                                 </Label>
                                 <Input
                                   id={`item-name-${index}`}
-                                  value={line.itemName ?? line.U_SKILL_NP ?? ""}
+                                  value={line.itemName ?? ""}
                                   onChange={(e) =>
                                     isEditing &&
                                     syncUpdateDocumentLine(

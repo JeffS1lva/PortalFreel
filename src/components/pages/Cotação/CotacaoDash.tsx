@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import axios from "axios";
-import { Loader2Icon, FileTextIcon, XIcon } from "lucide-react";
+import {
+  Loader2Icon,
+  FileTextIcon,
+  XIcon,
+  AlertCircle,
+  Bot,
+} from "lucide-react";
 
 import { DashboardHeader } from "@/components/pages/Cotação/Dahsboard/DashboardHeader";
 import { KPICards } from "@/components/pages/Cotação/Dahsboard/KpiCards";
@@ -13,6 +19,15 @@ import { QuotationCard } from "@/components/pages/Cotação/Dahsboard/QuotationC
 import { PdfViewerDialog } from "@/components/pages/Cotação/Dahsboard/PdfViewer";
 import { EditQuotationModal } from "@/components/pages/Cotação/Dahsboard/EditCotacao/EditModal";
 import type { QuotationSummary } from "./type";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const toSAPDate = (date: string | undefined): string | null => {
   if (!date) return null;
@@ -45,6 +60,13 @@ export function QuotationDashboard() {
   const [selectedQuotation, setSelectedQuotation] =
     useState<QuotationSummary | null>(null);
   const [activeTab, setActiveTab] = useState<"open" | "closed">("open");
+
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [_feedbackTitle, setFeedbackTitle] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackVariant, setFeedbackVariant] = useState<"success" | "error">(
+    "success"
+  );
 
   const isTokenExpired = (token: string): boolean => {
     try {
@@ -94,7 +116,7 @@ export function QuotationDashboard() {
         return;
       }
 
-      const response = await axios.get("/api/internal/Cotacoes", {
+      const response = await axios.get("/api/external/Cotacoes", {
         params: { slpCode, top: 50 },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -218,7 +240,7 @@ export function QuotationDashboard() {
       }
 
       const response = await axios.get(
-        `/api/internal/Pedidos/imprime-cotacao/${quotation.docNum}`,
+        `/api/external/Pedidos/imprime-cotacao/${quotation.docNum}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -264,6 +286,7 @@ export function QuotationDashboard() {
       throw new Error(err.response?.data?.message || "Erro ao fechar cotação");
     }
   };
+
 
   const handleEditQuotation = (quotation: QuotationSummary) => {
     setSelectedQuotation(quotation);
@@ -315,7 +338,6 @@ export function QuotationDashboard() {
           );
 
           const skillNp = (
-            line.U_SKILL_NP?.trim() ||
             line.itemName?.trim() ||
             ""
           ).substring(0, 100);
@@ -397,7 +419,7 @@ export function QuotationDashboard() {
       });
 
       const response = await axios.patch(
-        `/api/internal/Cotacoes/${updatedQuotation.docEntry}`,
+        `/api/external/Cotacoes/${updatedQuotation.docEntry}`,
         payload,
         {
           headers: {
@@ -408,8 +430,14 @@ export function QuotationDashboard() {
       );
 
       console.log("[v0] Resposta do servidor:", response.data);
-      alert("Cotação atualizada com sucesso!");
 
+      // SUCESSO → Mostra AlertDialog verde
+      setFeedbackVariant("success");
+      setFeedbackTitle("Sucesso!");
+      setFeedbackMessage("Cotação atualizada com sucesso.");
+      setFeedbackOpen(true);
+
+      // Atualiza lista
       setQuotations((prev) =>
         prev.map((q) =>
           q.docEntry === updatedQuotation.docEntry ? updatedQuotation : q
@@ -462,11 +490,11 @@ export function QuotationDashboard() {
 
       console.error("[v0] Mensagem final:", errorMessage);
 
-      const fullError = errorDetails
-        ? `${errorMessage}\n\n${errorDetails}`
-        : errorMessage;
-
-      alert(`Erro: ${fullError}`);
+      // ERRO → Mostra AlertDialog vermelho (igual ao EditModal)
+      setFeedbackVariant("error");
+      setFeedbackTitle("Não foi possível salvar a cotação");
+      setFeedbackMessage(errorMessage);
+      setFeedbackOpen(true);
     } finally {
       console.groupEnd();
     }
@@ -517,10 +545,7 @@ export function QuotationDashboard() {
         onNewQuotation={handleNewQuotation}
         onBackToPortal={handleBackToPortal}
       />
-      <main
-        className="max-w-[1600px] mx-auto px-6 lg:px-12 py-12 space-y-10"
-        role="main"
-      >
+      <main className=" mx-auto px-6 lg:px-12 py-12 space-y-10" role="main">
         <KPICards
           totalValue={totalValue}
           totalQuotations={openCount}
@@ -636,7 +661,7 @@ export function QuotationDashboard() {
 
               <div className="transition-all duration-300 ease-out">
                 {activeTab === "open" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                     {quotations
                       .filter((q) => q.docStatus !== "bost_Close")
                       .map((q) => (
@@ -654,7 +679,7 @@ export function QuotationDashboard() {
                   </div>
                 )}
                 {activeTab === "closed" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                     {quotations
                       .filter((q) => q.docStatus === "bost_Close")
                       .map((q) => (
@@ -697,6 +722,128 @@ export function QuotationDashboard() {
         onSave={handleSaveQuotation}
         formatCurrency={formatCurrency}
       />
+
+      {/* ALERTDIALOG DE FEEDBACK - 100% IGUAL AO DO EDITMODAL */}
+      {/* ALERTDIALOG DE FEEDBACK - PADRÃO WHATSAPP (IGUAL AO CREATE/EDIT) */}
+      {/* ALERT DIALOG DE FEEDBACK REPROJETADO - ESTILO PREMIUM (2025) */}
+      <AlertDialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>
+        <AlertDialogContent className="max-w-md border-0 shadow-2xl rounded-2xl overflow-hidden">
+          {/* Fundo dinâmico de gradiente baseado no tipo */}
+          <div
+            className={`absolute inset-0 opacity-10 ${
+              feedbackVariant === "success"
+                ? "bg-gradient-to-br from-emerald-400 to-teal-600"
+                : "bg-gradient-to-br from-red-500 to-rose-600"
+            }`}
+          />
+
+          <AlertDialogHeader className="relative pb-4">
+            <div
+              className="mx-auto flex h-16 w-16 items-center justify-center rounded-full mb-4 animate-in fade-in zoom-in duration-500"
+              style={{
+                backgroundColor:
+                  feedbackVariant === "success"
+                    ? "rgba(34, 197, 94, 0.15)" // verde suave
+                    : "rgba(239, 68, 68, 0.15)", // vermelho suave
+              }}
+            >
+              {feedbackVariant === "success" ? (
+                <svg
+                  className="h-10 w-10 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              ) : (
+                <AlertCircle className="h-10 w-10 text-red-600" />
+              )}
+            </div>
+
+            <AlertDialogTitle className="text-center text-2xl font-bold tracking-tight">
+              {feedbackVariant === "success" ? (
+                <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  Tudo certo!
+                </span>
+              ) : (
+                <span className="text-red-600">Ops, algo deu errado</span>
+              )}
+            </AlertDialogTitle>
+
+            <AlertDialogDescription className="text-center text-base text-muted-foreground mt-3 px-4">
+              {feedbackMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter className="pt-6 bg-background/80 backdrop-blur-sm">
+            <div className="w-full flex flex-col sm:flex-row gap-3">
+              {/* Botão principal */}
+              <AlertDialogAction
+                className={`
+            flex-1 font-medium transition-all transform hover:scale-[1.02] active:scale-98
+            ${
+              feedbackVariant === "success"
+                ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-lg"
+                : "bg-red-600 hover:bg-red-700 text-white shadow-lg"
+            }`}
+                onClick={() => setFeedbackOpen(false)}
+              >
+                {feedbackVariant === "success" ? "Perfeito!" : "Entendi"}
+              </AlertDialogAction>
+
+              {/* Botão do WhatsApp só aparece em caso de erro */}
+              {feedbackVariant === "error" && selectedQuotation && (
+                <AlertDialogAction
+                  asChild
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium shadow-lg transition-all transform hover:scale-[1.02] active:scale-98"
+                >
+                  <a
+                    href={`https://wa.me/5511974481125?text=${encodeURIComponent(
+                      `Olá equipe!\n\n` +
+                        `Tive um problema ao salvar uma cotação:\n\n` +
+                        `"${feedbackMessage}"\n\n` +
+                        `Cliente: ${
+                          selectedQuotation.cardName || "Não informado"
+                        } (${selectedQuotation.cardCode || "-"})\n` +
+                        `Cotação: ${
+                          selectedQuotation.docNum
+                            ? `#${selectedQuotation.docNum}`
+                            : "Nova"
+                        }\n` +
+                        `Usuário: ${(() => {
+                          try {
+                            const auth = JSON.parse(
+                              localStorage.getItem("authData") || "{}"
+                            );
+                            return auth.firstName && auth.lastName
+                              ? `${auth.firstName} ${auth.lastName}`
+                              : auth.login || auth.email || "Não identificado";
+                          } catch {
+                            return "Não identificado";
+                          }
+                        })()}\n` +
+                        `Horário: ${new Date().toLocaleString("pt-BR")}\n\n` +
+                        `Podem me ajudar? Obrigado!`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Bot className="h-5 w-5" />
+                    Suporte no WhatsApp
+                  </a>
+                </AlertDialogAction>
+              )}
+            </div>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

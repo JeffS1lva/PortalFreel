@@ -1,23 +1,10 @@
-import * as React from "react"
-import * as RechartsPrimitive from "recharts"
+// REMOVED: unused UI component. Left as stub to avoid accidental imports failures.
 
-import { cn } from "@/lib/utils"
+// The Chart UI component implementation was removed because there are no
+// references to it in the repository. Keep a small stub export to prevent
+// accidental import errors during incremental cleanup.
 
-// Format: { THEME_NAME: CSS_SELECTOR }
-const THEMES = { light: "", dark: ".dark" } as const
-
-export type ChartConfig = {
-  [k in string]: {
-    label?: React.ReactNode
-    icon?: React.ComponentType
-  } & (
-    | { color?: string; theme?: never }
-    | { color?: never; theme: Record<keyof typeof THEMES, string> }
-  )
-}
-
-type ChartContextProps = {
-  config: ChartConfig
+export const __REMOVED__ = undefined
 }
 
 const ChartContext = React.createContext<ChartContextProps | null>(null)

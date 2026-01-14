@@ -34,6 +34,7 @@ import {
   Calendar,
   DollarSign,
   Info,
+  AlertCircle,
 } from "lucide-react";
 
 import {
@@ -45,11 +46,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { AnimatePresence, motion } from "framer-motion";
 import { ItemsEditable } from "./ItemsView";
 import type { BPAddress, DocumentLine, QuotationSummary } from "../../type";
 import axios from "axios";
+import { getFriendlyErrorMessage } from "../../utils/sapErrorHandler";
 
 interface EditQuotationModalProps {
   open: boolean;
@@ -241,6 +244,7 @@ export function EditQuotationModal({
   const [alertOpen, setAlertOpen] = useState(false);
   const [_isAddressChanged, setIsAddressChanged] = useState(false);
   const [priceListNum, setPriceListNum] = useState<number | null>(null);
+  const [errorAlertMessage, setErrorAlertMessage] = useState<string>("");
 
   /*  INICIALIZA formData com endereço preenchido automaticamente   */
   /* --------------------------------------------------------------- */
@@ -476,6 +480,8 @@ export function EditQuotationModal({
     if (!formData) return;
 
     setIsLoading(true);
+    setErrorAlertMessage(""); // limpa erro anterior
+
     try {
       const bplId = formData.BPL_IDAssignedToInvoice || 1;
       const mainUsage =
@@ -485,15 +491,13 @@ export function EditQuotationModal({
         .filter((l) => l.ItemCode?.trim())
         .map((line, index) => {
           const rawPrice = Number(line.preco || line.Price || 0);
-
-          // ARREDONDAMENTO FORÇADO PARA 4 CASAS DECIMAIS (OBRIGATÓRIO NO SAP B1)
           const Price = Number(rawPrice.toFixed(4));
 
           return {
             ...line,
             LineNum: index,
             Quantity: Math.max(0.01, Number(line.Quantity) || 1),
-            Price, // ← PREÇO CORRIGIDO AQUI
+            Price,
             DiscountPercent: Number(line.DiscountPercent) || 0,
             ShipDate: toSAPDate(line.ShipDate) || formData.docDueDate,
             Usage: mainUsage,
@@ -511,48 +515,32 @@ export function EditQuotationModal({
         u_Portal: "44",
         BPL_IDAssignedToInvoice: bplId,
         TaxExtension: { MainUsage: mainUsage },
-        documentLines: reindexedLines, // USA AS LINHAS REINDEXADAS
+        documentLines: reindexedLines,
       };
 
-      // LOGS DETALHADOS
       console.groupCollapsed("EDIT QUOTATION - SAVE");
-      console.log(
-        "[v0] LineNums corrigidos:",
-        reindexedLines.map((l) => ({
-          ItemCode: l.ItemCode,
-          LineNum: l.LineNum,
-        }))
-      );
-      console.log("formData (antes):", {
-        docEntry: formData.docEntry,
-        docNum: formData.docNum,
-        BPL_ID: formData.BPL_IDAssignedToInvoice,
-        MainUsage: formData.TaxExtension?.MainUsage,
-        u_POL_EnderEntrega: formData.u_POL_EnderEntrega,
-        docTotal: formData.docTotal,
-        documentLines: formData.documentLines.length,
-      });
-
-      console.log("cleanData (enviado ao SAP):", {
-        DocEntry: cleanData.docEntry,
-        BPL_IDAssignedToInvoice: cleanData.BPL_IDAssignedToInvoice,
-        TaxExtension: cleanData.TaxExtension,
-        u_POL_EnderEntrega: cleanData.u_POL_EnderEntrega,
-        DocumentLines: cleanData.documentLines.map((l) => ({
-          LineNum: l.LineNum,
-          ItemCode: l.ItemCode,
-          Quantity: l.Quantity,
-          Price: l.Price,
-          Usage: l.Usage,
-        })),
-      });
+      console.log("Payload enviado:", cleanData);
       console.groupEnd();
 
       await onSave(cleanData);
+
+      // SUCESSO → fecha o modal
       onOpenChange(false);
     } catch (error: any) {
       console.error("FALHA AO SALVAR COTAÇÃO:", error);
-      console.error("Erro completo:", error.response?.data || error.message);
+
+      console.groupCollapsed(
+        "%c[ERRO SAP DETALHADO]",
+        "color: red; font-weight: bold"
+      );
+      console.log("Status:", error?.response?.status);
+      console.log("Data:", error?.response?.data);
+      console.groupEnd();
+
+      const friendlyMessage = getFriendlyErrorMessage(error);
+      setErrorAlertMessage(friendlyMessage);
+
+      // O MODAL CONTINUA ABERTO PARA O USUÁRIO VER O ERRO
     } finally {
       setIsLoading(false);
     }
@@ -593,6 +581,37 @@ export function EditQuotationModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContentEditModal className="max-w-11/12 max-h-[95vh] overflow-hidden flex flex-col p-0">
+        {/* ALERT DE ERRO BONITO COM ALERTDIALOG (SHADCN) */}
+        {/* ALERTA DE ERRO - CORRIGIDO (shadcn/ui correto) */}
+        <AlertDialog
+          open={!!errorAlertMessage}
+          onOpenChange={() => setErrorAlertMessage("")}
+        >
+          {/* Trigger invisível - necessário para o AlertDialog funcionar */}
+          <AlertDialogTrigger asChild>
+            <span className="hidden" />
+          </AlertDialogTrigger>
+
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-3 text-red-600">
+                <AlertCircle className="h-6 w-6" />
+                Não foi possível salvar a cotação
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-base leading-relaxed pt-2">
+                {errorAlertMessage || "Ocorreu um erro inesperado."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                onClick={() => setErrorAlertMessage("")}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+              >
+                Entendido
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         {/* HEADER */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
           <div className="flex justify-between items-center gap-2">

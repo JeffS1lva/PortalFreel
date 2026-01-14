@@ -16,7 +16,7 @@ export function DashboardHeader({ isEmbedded, onNewQuotation, onBackToPortal }: 
       role="navigation"
       aria-label="Dashboard principal"
     >
-      <div className="max-w-[1600px] mx-auto px-6 lg:px-12">
+      <div className=" mx-auto px-6 lg:px-12">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-sky-900 to-zinc-800 flex items-center justify-center shadow-lg shadow-sky-500/20">

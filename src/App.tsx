@@ -20,7 +20,7 @@ import { QuotationForm } from "./components/pages/Cotacao";
 import { QuotationDashboard } from "./components/pages/Cotação/CotacaoDash";
 import { RelatorioPage } from "./components/pages/Report";
 
-// Componente do Modal (adicionado aqui para ficar tudo em um arquivo só, mas pode separar)
+// Componente do Modal
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Clock, AlertTriangle, RefreshCw, LogOut } from "lucide-react";
 
 interface UserData {
   login: string;
@@ -39,7 +40,6 @@ interface UserData {
   token?: string;
 }
 
-// Modal de expiração de sessão
 function SessionTimeoutModal({
   open,
   remainingSeconds,
@@ -52,11 +52,33 @@ function SessionTimeoutModal({
   onLogout: () => void;
 }) {
   const [renewing, setRenewing] = useState(false);
+  const [progress, setProgress] = useState(100);
+
+  const WARNING_TIME = 5 * 60; 
+
+  useEffect(() => {
+    if (open) {
+      const percentage = (remainingSeconds / WARNING_TIME) * 100;
+      setProgress(Math.max(0, Math.min(100, percentage)));
+    }
+  }, [remainingSeconds, open]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const getUrgencyColor = () => {
+    if (remainingSeconds <= 60) return "text-red-600 dark:text-red-400";
+    if (remainingSeconds <= 180) return "text-orange-600 dark:text-orange-400";
+    return "text-yellow-600 dark:text-yellow-400";
+  };
+
+  const getProgressColor = () => {
+    if (remainingSeconds <= 60) return "bg-red-500";
+    if (remainingSeconds <= 180) return "bg-orange-500";
+    return "bg-yellow-500";
   };
 
   const handleRenew = async () => {
@@ -70,34 +92,96 @@ function SessionTimeoutModal({
 
   return (
     <Dialog open={open} modal={true}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle className="text-xl">Sessão prestes a expirar</DialogTitle>
-          <DialogDescription className="text-base pt-2">
-            Sua sessão expira em <strong className="text-red-600">{formatTime(remainingSeconds)}</strong>.
-            <br />
-            Deseja continuar conectado?
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        className="sm:max-w-[480px] gap-0 p-0 overflow-hidden"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700">
+          <div
+            className={`h-full transition-all duration-1000 ease-linear ${getProgressColor()}`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
 
-        <DialogFooter className="gap-3 sm:gap-4 sm:justify-end mt-6">
-          <Button variant="outline" onClick={onLogout} disabled={renewing}>
-            Sair agora
-          </Button>
-          <Button onClick={handleRenew} disabled={renewing}>
-            {renewing ? "Renovando..." : "Continuar conectado"}
-          </Button>
-        </DialogFooter>
+        <div className="p-6">
+          <DialogHeader className="space-y-4">
+            <div className="flex items-center justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-yellow-500/20 dark:bg-yellow-500/10 rounded-full animate-ping" />
+                <div className="relative bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-full">
+                  <AlertTriangle className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+                </div>
+              </div>
+            </div>
+
+            <DialogTitle className="text-2xl font-bold text-center">
+              Sessão prestes a expirar
+            </DialogTitle>
+
+            <DialogDescription className="text-center text-base space-y-3">
+              <p className="text-gray-600 dark:text-gray-400">
+                Por motivos de segurança, sua sessão será encerrada em breve.
+              </p>
+
+              <div className="flex items-center justify-center gap-3 py-4">
+                <Clock className={`h-6 w-6 ${getUrgencyColor()}`} />
+                <span
+                  className={`text-5xl font-bold tabular-nums tracking-tight ${getUrgencyColor()}`}
+                >
+                  {formatTime(remainingSeconds)}
+                </span>
+              </div>
+
+              <p className="text-sm text-gray-500 dark:text-gray-500">
+                Clique em "Continuar conectado" para renovar sua sessão
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex-col sm:flex-row gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={onLogout}
+              disabled={renewing}
+              className="w-full sm:w-auto order-2 sm:order-1"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair agora
+            </Button>
+
+            <Button
+              onClick={handleRenew}
+              disabled={renewing}
+              className="w-full sm:w-auto order-1 sm:order-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              {renewing ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Renovando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Continuar conectado
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-center text-gray-500 dark:text-gray-500">
+              💡 Dica: Mantenha-se ativo no sistema para evitar desconexões automáticas
+            </p>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
 export function App() {
-  // Controle de versão da aplicação
   const APP_VERSION = "1.0.4"; // aumentado para forçar limpeza se necessário
 
-  // Estado de autenticação
   const [authData, setAuthData] = useState<UserData | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const token = localStorage.getItem("token");
@@ -105,20 +189,16 @@ export function App() {
     return !!token && authFlag === "true" && token !== "undefined" && token !== "null";
   });
 
-  // Estado do modal de expiração
   const [showTimeoutModal, setShowTimeoutModal] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
 
-  // Refs para controle de timers
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Configurações
   const WARNING_TIME_SECONDS = 5 * 60; // 5 minutos antes
   const CHECK_INTERVAL_MS = 10_000; // checa a cada 10s
   const REFRESH_ENDPOINT = "/api/auth/refresh-token"; // ajuste conforme seu backend
 
-  // Decodifica JWT e retorna timestamp de expiração (em milissegundos)
   const getTokenExpiration = (token: string): number | null => {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
@@ -158,7 +238,6 @@ export function App() {
     return false;
   };
 
-  // Monitora expiração do token
   const startSessionMonitoring = () => {
     if (checkIntervalRef.current) clearTimeout(checkIntervalRef.current);
     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
@@ -180,7 +259,6 @@ export function App() {
       const now = Date.now();
       const timeLeftMs = exp - now;
 
-      // Token já expirado
       if (timeLeftMs <= 0) {
         handleLogout();
         return;
@@ -188,25 +266,21 @@ export function App() {
 
       const timeLeftSeconds = Math.floor(timeLeftMs / 1000);
 
-      // Mostrar modal 5 minutos antes
       if (timeLeftSeconds <= WARNING_TIME_SECONDS && !showTimeoutModal) {
         setRemainingSeconds(timeLeftSeconds);
         setShowTimeoutModal(true);
       }
 
-      // Atualiza contador quando modal está aberto
       if (showTimeoutModal) {
         setRemainingSeconds(timeLeftSeconds);
       }
 
-      // Reagendar próxima checagem
       checkIntervalRef.current = setTimeout(checkToken, CHECK_INTERVAL_MS);
     };
 
     checkToken();
   };
 
-  // Contador regressivo em tempo real quando modal está aberto
   useEffect(() => {
     if (!showTimeoutModal) {
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
@@ -228,7 +302,6 @@ export function App() {
     };
   }, [showTimeoutModal]);
 
-  // Inicia monitoramento ao autenticar
   useEffect(() => {
     if (isAuthenticated) {
       startSessionMonitoring();
@@ -240,7 +313,6 @@ export function App() {
     };
   }, [isAuthenticated]);
 
-  // Limpeza automática de cache em novas versões
   useEffect(() => {
     const currentVersion = localStorage.getItem("appVersion");
     if (currentVersion !== APP_VERSION) {
@@ -251,7 +323,6 @@ export function App() {
     }
   }, []);
 
-  // Carrega dados de autenticação ao iniciar
   useEffect(() => {
     const storedAuthData = localStorage.getItem("authData");
     const token = localStorage.getItem("token");
@@ -276,7 +347,6 @@ export function App() {
     }
   }, []);
 
-  // Funções de auth
   const handleLoginSuccess = (userData: UserData) => {
     localStorage.setItem("token", userData.token || "");
     localStorage.setItem("authData", JSON.stringify(userData));
@@ -311,10 +381,8 @@ export function App() {
 
   const handleCookieConsent = (preferences: Record<string, boolean>) => {
     if (preferences.analytics) {
-      // analytics
     }
     if (preferences.marketing) {
-      // pixels
     }
   };
 
@@ -327,7 +395,6 @@ export function App() {
           onConsent={handleCookieConsent}
         >
           <Routes>
-            {/* Login público */}
             <Route
               path="/login"
               element={
@@ -339,7 +406,6 @@ export function App() {
               }
             />
 
-            {/* Rotas protegidas */}
             <Route
               path="/*"
               element={
@@ -369,7 +435,6 @@ export function App() {
               }
             />
 
-            {/* Redireciona raiz */}
             <Route
               path="/"
               element={
@@ -384,7 +449,6 @@ export function App() {
 
           <Toaster position="top-right" />
 
-          {/* Modal de expiração de sessão */}
           <SessionTimeoutModal
             open={showTimeoutModal}
             remainingSeconds={remainingSeconds}
@@ -397,7 +461,6 @@ export function App() {
   );
 }
 
-// Layout autenticado (inalterado)
 function AuthenticatedLayout({
   children,
   onLogout,

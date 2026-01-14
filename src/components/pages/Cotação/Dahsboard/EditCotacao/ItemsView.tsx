@@ -15,6 +15,7 @@ import {
   CircleDollarSign,
   ShoppingBag,
   Search,
+  AlertCircle,
 } from "lucide-react";
 import {
   formatCurrency,
@@ -23,6 +24,15 @@ import {
 } from "@/components/pages/Cotação/utils/currency";
 import { useNumberInput } from "@/components/pages/Cotação/utils/useNumberInput";
 import axios from "axios";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface DocumentLine {
   LineNum: number;
@@ -36,7 +46,6 @@ interface DocumentLine {
   UoMEntry: number;
   UoMCode: string;
   ShipDate: string;
-  U_SKILL_NP: string | null;
   itemName?: string;
   preco?: number;
 }
@@ -151,8 +160,9 @@ export function ItemsEditable({
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  console.log("🔥 Lines recebidas no ItemsEditable:", lines);
+  const [errorAlertMessage, setErrorAlertMessage] = useState<string>("");
 
+  console.log("🔥 Lines recebidas no ItemsEditable:", lines);
 
   const listNum = priceListNum;
 
@@ -178,6 +188,9 @@ export function ItemsEditable({
       setShowSuggestions(data.length > 0);
     } catch (error) {
       console.error("Erro ao buscar lista de preços:", error);
+      setErrorAlertMessage(
+        "Não foi possível carregar os preços. Tente novamente."
+      );
       setSearchResults([]);
       setShowSuggestions(false);
     } finally {
@@ -196,10 +209,13 @@ export function ItemsEditable({
   }, [searchTerm, listNum]);
 
   const selectItem = (item: PriceItem) => {
-
+    const alreadyExists = lines.some((l) => l.ItemCode === item.itemCode);
+    if (alreadyExists) {
+      setErrorAlertMessage("Este item já foi adicionado à cotação.");
+      return;
+    }
     const newLine: Partial<DocumentLine> = {
       ItemCode: item.itemCode,
-      U_SKILL_NP: item.itemName,
       itemName: item.itemName,
       Quantity: 1,
       Price: roundTo2(item.preco),
@@ -249,14 +265,12 @@ export function ItemsEditable({
     if (editingIndex === null) return;
 
     const updates: Partial<DocumentLine> = { ...tempData };
-    if (updates.itemName !== undefined || updates.U_SKILL_NP !== undefined) {
+    if (updates.itemName  !== undefined) {
       const finalName =
         updates.itemName ??
-        updates.U_SKILL_NP ??
         lines[editingIndex].itemName ??
         "";
       updates.itemName = finalName;
-      updates.U_SKILL_NP = finalName;
     }
 
     onUpdateLine(editingIndex, updates);
@@ -273,6 +287,31 @@ export function ItemsEditable({
 
   return (
     <>
+      {/* ALERT DIALOG DE ERRO - 100% IGUAL AO DO EDITMODAL */}
+      <AlertDialog
+        open={!!errorAlertMessage}
+        onOpenChange={() => setErrorAlertMessage("")}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-3 text-red-600">
+              <AlertCircle className="h-6 w-6" />
+              Não foi possível completar a ação
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base leading-relaxed pt-2">
+              {errorAlertMessage || "Ocorreu um erro inesperado."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => setErrorAlertMessage("")}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+            >
+              Entendido
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* CAMPO DE BUSCA PARA ADICIONAR NOVO ITEM */}
       <div className="mb-6">
         <div className="relative">

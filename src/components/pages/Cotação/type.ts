@@ -13,7 +13,6 @@ export interface DocumentLine {
   UoMEntry: number;
   UoMCode: string;
   ShipDate: string;
-  U_SKILL_NP: string | null; // ← PERMITE NULL
   itemName?: string;
   preco?: number; // opcional, se usado em outros lugares
 }
@@ -55,12 +54,12 @@ export interface QuotationSummary {
   salesPersonCode: number;
   documentLines: DocumentLine[];
   cardName?: string;
-  docNum?: string;
+  docNum: string | number
   BPAddresses?: BPAddress[];
   ShipToDefault?: string | BPAddress;
   DocCurrency?: string;
   PriceListNum?: number;
-  
+  cardEmail?: string
 }
 
 export interface DocumentSpecialLine {

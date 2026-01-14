@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       proxy: {
         '/api/internal': {
-          target: 'https://10.101.200.180:7002',
+          target: 'https://10.101.200.173:7002',
           changeOrigin: true,
           secure: false, // Apenas para desenvolvimento
           // CORREÇÃO: Não remover o /api do caminho, apenas o /internal
@@ -66,7 +66,7 @@ export default defineConfig(({ mode }) => {
           }
         },
         '/api/external': {
-          target: 'https://129.148.37.60:7002',
+          target: 'https://137.131.194.212:7002',
           changeOrigin: true,
           secure: true,
           rewrite: (path) => path.replace(/^\/api\/external/, '/api'),

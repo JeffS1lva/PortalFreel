@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Progress } from "@/components/ui/progress"
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import {
   FileTextIcon,
   MapPinIcon,
@@ -17,41 +17,45 @@ import {
   DollarSignIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
-} from "lucide-react"
-import { initialQuotation, type DocumentLine, type Quotation } from "@/components/pages/Cotação/type"
-import { GeneralInformation } from "@/components/pages/Cotação/Pages/InfoGeneral"
-import { Addresses } from "@/components/pages/Cotação/Pages/Addresses"
-import { Items } from "@/components/pages/Cotação/Pages/Items"
-import { Review } from "@/components/pages/Cotação/Pages/Review"
+} from "lucide-react";
+import {
+  initialQuotation,
+  type DocumentLine,
+  type Quotation,
+} from "@/components/pages/Cotação/type";
+import { GeneralInformation } from "@/components/pages/Cotação/Create/InfoGeneral";
+import { Addresses } from "@/components/pages/Cotação/Create/Addresses";
+import { Items } from "@/components/pages/Cotação/Create/Items";
+import { Review } from "@/components/pages/Cotação/Create/Review";
 
 export function QuotationForm() {
-  const [quotation, setQuotation] = useState<Quotation>(initialQuotation)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [currentStep, setCurrentStep] = useState(1)
-  const [progress, setProgress] = useState(25)
-  const [showSuccess, setShowSuccess] = useState(false)
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([])
+  const [quotation, setQuotation] = useState<Quotation>(initialQuotation);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [progress, setProgress] = useState(25);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    setProgress(currentStep * 25)
-  }, [currentStep])
+    setProgress(currentStep * 25);
+  }, [currentStep]);
 
   useEffect(() => {
-    const currentStepElement = stepRefs.current[currentStep - 1]
+    const currentStepElement = stepRefs.current[currentStep - 1];
     if (currentStepElement) {
-      currentStepElement.focus()
+      currentStepElement.focus();
     }
-  }, [currentStep])
+  }, [currentStep]);
 
   const updateQuotation = (field: keyof Quotation, value: any) => {
-    setQuotation((prev) => ({ ...prev, [field]: value }))
-  }
+    setQuotation((prev) => ({ ...prev, [field]: value }));
+  };
 
   const updateDocumentLine = (index: number, field: string, value: any) => {
-    const updatedLines = [...quotation.DocumentLines]
-    updatedLines[index] = { ...updatedLines[index], [field]: value }
-    setQuotation((prev) => ({ ...prev, DocumentLines: updatedLines }))
-  }
+    const updatedLines = [...quotation.DocumentLines];
+    updatedLines[index] = { ...updatedLines[index], [field]: value };
+    setQuotation((prev) => ({ ...prev, DocumentLines: updatedLines }));
+  };
 
   const addDocumentLine = () => {
     const newLine: DocumentLine = {
@@ -65,81 +69,82 @@ export function QuotationForm() {
       Usage: quotation.BPL_IDAssignedToInvoice === 1 ? 40 : 90,
       UoMEntry: 0,
       UoMCode: "",
-      listCode:0,
+      listCode: 0,
       ShipDate: new Date().toISOString().split("T")[0],
-      U_SKILL_NP: "",
-      preco: 0
-    }
+      preco: 0,
+    };
     setQuotation((prev) => ({
       ...prev,
       DocumentLines: [...prev.DocumentLines, newLine],
-    }))
-  }
+    }));
+  };
 
   const removeDocumentLine = (index: number) => {
-    const updatedLines = quotation.DocumentLines.filter((_, i) => i !== index)
+    const updatedLines = quotation.DocumentLines.filter((_, i) => i !== index);
     updatedLines.forEach((line, i) => {
-      line.LineNum = i
-    })
-    setQuotation((prev) => ({ ...prev, DocumentLines: updatedLines }))
-  }
+      line.LineNum = i;
+    });
+    setQuotation((prev) => ({ ...prev, DocumentLines: updatedLines }));
+  };
 
   const calculateTotal = () => {
     return quotation.DocumentLines.reduce((total, line) => {
-      const lineTotal = line.Quantity * line.Price * (1 - line.DiscountPercent / 100)
-      return total + lineTotal
-    }, 0)
-  }
+      const lineTotal =
+        line.Quantity * line.Price * (1 - line.DiscountPercent / 100);
+      return total + lineTotal;
+    }, 0);
+  };
 
   const calculateTotalDiscount = () => {
     return quotation.DocumentLines.reduce((total, line) => {
-      const discount = line.Quantity * line.Price * (line.DiscountPercent / 100)
-      return total + discount
-    }, 0)
-  }
+      const discount =
+        line.Quantity * line.Price * (line.DiscountPercent / 100);
+      return total + discount;
+    }, 0);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      setShowSuccess(true)
+      setShowSuccess(true);
 
       // Reset after showing success
       setTimeout(() => {
-        setQuotation(initialQuotation)
-        setCurrentStep(1)
-        setShowSuccess(false)
-      }, 3000)
+        setQuotation(initialQuotation);
+        setCurrentStep(1);
+        setShowSuccess(false);
+      }, 3000);
     } catch (error) {
-      console.error("Erro ao enviar cotação:", error)
+      console.error("Erro ao enviar cotação:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  const totalValue = calculateTotal()
-  const totalDiscount = calculateTotalDiscount()
-  const subtotal = totalValue + totalDiscount
+  const totalValue = calculateTotal();
+  const totalDiscount = calculateTotalDiscount();
+  const subtotal = totalValue + totalDiscount;
 
   const nextStep = () => {
-    if (currentStep < 4) setCurrentStep(currentStep + 1)
-  }
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
+  };
 
   const prevStep = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1)
-  }
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowRight" && currentStep < 4) {
-      nextStep()
+      nextStep();
     } else if (e.key === "ArrowLeft" && currentStep > 1) {
-      prevStep()
+      prevStep();
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background flex" onKeyDown={handleKeyDown}>
@@ -157,8 +162,12 @@ export function QuotationForm() {
                 <FileTextIcon className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">Inicie uma Nova Cotação</h2>
-                <p className="text-xs text-muted-foreground">Plataforma Integrada de Gestão de Cotações</p>
+                <h2 className="text-xl font-bold text-foreground">
+                  Inicie uma Nova Cotação
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Plataforma Integrada de Gestão de Cotações
+                </p>
               </div>
             </div>
           </div>
@@ -168,13 +177,20 @@ export function QuotationForm() {
           {/* Progress Overview */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-foreground">Progresso</span>
-              <Badge variant="secondary" className="bg-muted text-muted-foreground">
+              <span className="text-sm font-semibold text-foreground">
+                Progresso
+              </span>
+              <Badge
+                variant="secondary"
+                className="bg-muted text-muted-foreground"
+              >
                 {progress}%
               </Badge>
             </div>
             <Progress value={progress} className="h-2" />
-            <p className="text-xs text-muted-foreground">Etapa {currentStep} de 4</p>
+            <p className="text-xs text-muted-foreground">
+              Etapa {currentStep} de 4
+            </p>
           </div>
 
           <Separator className="bg-border" />
@@ -182,10 +198,30 @@ export function QuotationForm() {
           {/* Step Navigation */}
           <nav className="space-y-2" aria-label="Etapas da cotação">
             {[
-              { step: 1, title: "Informações Gerais", icon: FileTextIcon, desc: "Dados básicos" },
-              { step: 2, title: "Endereços", icon: MapPinIcon, desc: "Local de entrega" },
-              { step: 3, title: "Itens", icon: PackageIcon, desc: "Produtos e serviços" },
-              { step: 4, title: "Revisão", icon: CheckCircleIcon, desc: "Confirmar dados" },
+              {
+                step: 1,
+                title: "Informações Gerais",
+                icon: FileTextIcon,
+                desc: "Dados básicos",
+              },
+              {
+                step: 2,
+                title: "Endereços",
+                icon: MapPinIcon,
+                desc: "Local de entrega",
+              },
+              {
+                step: 3,
+                title: "Itens",
+                icon: PackageIcon,
+                desc: "Produtos e serviços",
+              },
+              {
+                step: 4,
+                title: "Revisão",
+                icon: CheckCircleIcon,
+                desc: "Confirmar dados",
+              },
             ].map(({ step, title, icon: Icon, desc }) => (
               <button
                 key={step}
@@ -200,16 +236,30 @@ export function QuotationForm() {
               >
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                    currentStep === step ? "bg-primary/10" : "bg-muted/5 group-hover:bg-muted/20"
+                    currentStep === step
+                      ? "bg-primary/10"
+                      : "bg-muted/5 group-hover:bg-muted/20"
                   }`}
                 >
-                  {currentStep > step ? <CheckCircleIcon className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                  {currentStep > step ? (
+                    <CheckCircleIcon className="h-5 w-5" />
+                  ) : (
+                    <Icon className="h-5 w-5" />
+                  )}
                 </div>
                 <div className="flex-1 text-left">
                   <div className="font-semibold text-sm">{title}</div>
-                  <div className={`text-xs mt-0.5 ${currentStep === step ? "opacity-90" : "opacity-60"}`}>{desc}</div>
+                  <div
+                    className={`text-xs mt-0.5 ${
+                      currentStep === step ? "opacity-90" : "opacity-60"
+                    }`}
+                  >
+                    {desc}
+                  </div>
                 </div>
-                {currentStep > step && <CheckCircleIcon className="h-5 w-5 text-accent flex-shrink-0" />}
+                {currentStep > step && (
+                  <CheckCircleIcon className="h-5 w-5 text-accent flex-shrink-0" />
+                )}
               </button>
             ))}
           </nav>
@@ -218,7 +268,9 @@ export function QuotationForm() {
 
           {/* Quick Stats */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">Resumo Rápido</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              Resumo Rápido
+            </h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
                 <div className="flex items-center gap-2">
@@ -226,7 +278,10 @@ export function QuotationForm() {
                   <span className="text-xs text-foreground/80">Total</span>
                 </div>
                 <span className="text-sm font-bold text-foreground">
-                  {quotation.DocCurrency} {totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {quotation.DocCurrency}{" "}
+                  {totalValue.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                  })}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
@@ -234,7 +289,9 @@ export function QuotationForm() {
                   <PackageIcon className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs text-foreground/80">Itens</span>
                 </div>
-                <span className="text-sm font-bold text-foreground">{quotation.DocumentLines.length}</span>
+                <span className="text-sm font-bold text-foreground">
+                  {quotation.DocumentLines.length}
+                </span>
               </div>
             </div>
           </div>
@@ -283,7 +340,7 @@ export function QuotationForm() {
                 quotation={quotation}
                 updateQuotation={updateQuotation}
                 stepRef={(el) => {
-                  stepRefs.current[0] = el
+                  stepRefs.current[0] = el;
                 }}
               />
             )}
@@ -293,7 +350,7 @@ export function QuotationForm() {
                 quotation={quotation}
                 updateQuotation={updateQuotation}
                 stepRef={(el) => {
-                  stepRefs.current[1] = el
+                  stepRefs.current[1] = el;
                 }}
               />
             )}
@@ -305,7 +362,7 @@ export function QuotationForm() {
                 addDocumentLine={addDocumentLine}
                 removeDocumentLine={removeDocumentLine}
                 stepRef={(el) => {
-                  stepRefs.current[2] = el
+                  stepRefs.current[2] = el;
                 }}
               />
             )}
@@ -317,7 +374,7 @@ export function QuotationForm() {
                 totalDiscount={totalDiscount}
                 subtotal={subtotal}
                 stepRef={(el) => {
-                  stepRefs.current[3] = el
+                  stepRefs.current[3] = el;
                 }}
               />
             )}
@@ -349,9 +406,13 @@ export function QuotationForm() {
                   className="px-10 h-16 border-2 transition-all hover:scale-105 focus-bold bg-transparent text-lg font-semibold"
                   disabled={isSubmitting}
                   onClick={() => {
-                    if (confirm("Tem certeza que deseja cancelar? Todos os dados serão perdidos.")) {
-                      setQuotation(initialQuotation)
-                      setCurrentStep(1)
+                    if (
+                      confirm(
+                        "Tem certeza que deseja cancelar? Todos os dados serão perdidos."
+                      )
+                    ) {
+                      setQuotation(initialQuotation);
+                      setCurrentStep(1);
                     }
                   }}
                   aria-label="Cancelar cotação"
@@ -412,11 +473,15 @@ export function QuotationForm() {
                 <CheckCircleIcon className="h-16 w-16 text-primary-foreground" />
               </div>
               <div>
-                <h2 id="success-title" className="text-4xl font-bold mb-4 gradient-text">
+                <h2
+                  id="success-title"
+                  className="text-4xl font-bold mb-4 gradient-text"
+                >
                   Cotação Criada!
                 </h2>
                 <p className="text-muted-foreground text-lg leading-relaxed">
-                  Sua cotação foi processada com sucesso e está pronta para ser enviada ao cliente.
+                  Sua cotação foi processada com sucesso e está pronta para ser
+                  enviada ao cliente.
                 </p>
               </div>
               <div className="pt-4">
@@ -429,8 +494,9 @@ export function QuotationForm() {
 
       {/* Accessibility Announcements */}
       <div className="sr-only" role="status" aria-live="polite">
-        Use as setas do teclado para navegar entre as etapas. Pressione Tab para navegar entre os campos.
+        Use as setas do teclado para navegar entre as etapas. Pressione Tab para
+        navegar entre os campos.
       </div>
     </div>
-  )
+  );
 }

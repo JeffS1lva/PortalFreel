@@ -24,11 +24,11 @@ import {
 } from "@/components/pages/Cotação/type";
 import Logo from "@/assets/logoBrowser.png";
 
-import { ClientSearch } from "@/components/pages/Cotação/Pages/ClientSearch";
-import { GeneralInformation } from "@/components/pages/Cotação/Pages/InfoGeneral";
-import { Addresses } from "@/components/pages/Cotação/Pages/Addresses";
-import { Items } from "@/components/pages/Cotação/Pages/Items";
-import { Review } from "@/components/pages/Cotação/Pages/Review";
+import { ClientSearch } from "@/components/pages/Cotação/Create/ClientSearch";
+import { GeneralInformation } from "@/components/pages/Cotação/Create/InfoGeneral";
+import { Addresses } from "@/components/pages/Cotação/Create/Addresses";
+import { Items } from "@/components/pages/Cotação/Create/Items";
+import { Review } from "@/components/pages/Cotação/Create/Review";
 import { Button } from "../ui/button";
 
 export function QuotationForm() {
@@ -74,7 +74,6 @@ export function QuotationForm() {
     const baseLine: DocumentLine = {
       LineNum: quotation.DocumentLines.length,
       ItemCode: data?.ItemCode || "",
-      U_SKILL_NP: data?.U_SKILL_NP || "",
       Price: data?.Price || 0,
       MeasureUnit: data?.MeasureUnit || "UN",
       Quantity: data?.Quantity || 1,
@@ -241,21 +240,24 @@ export function QuotationForm() {
       U_SKILL_ENDENT: header.U_SKILL_ENDENT,
       U_POL_EnderEntrega: header.U_POL_EnderEntrega,
 
-      DocumentLines: items.map((item, index) => ({
-        LineNum: index,
-        ItemCode: item.itemCode,
-        Quantity: item.Quantity || 1,
-        Price: item.preco,
-        Currency: "R$",
-        DiscountPercent: item.DiscountPercent,
-        MeasureUnit: item.unMedida,
-        Usage: mainUsage, // TODAS AS LINHAS COM USAGE CORRETO
-        UoMEntry: item.idUn || 0,
-        UoMCode: item.unidade,
-        ShipDate: header.ShipDate || new Date().toISOString().split("T")[0],
-        U_SKILL_NP: item.itemName,
-        ListNum: item.listCode ? Number(item.listCode) : undefined,
-      })),
+      DocumentLines: items.map((item, index) => {
+
+        return {
+          LineNum: index,
+          ItemCode: item.itemCode,
+          Quantity: item.Quantity || 1,
+          Price: item.preco,
+          Currency: "R$",
+          DiscountPercent: item.DiscountPercent,
+          MeasureUnit: item.unMedida,
+          Usage: mainUsage,
+          UoMEntry: item.idUn || 0,
+          UoMCode: item.unidade,
+          ShipDate: header.ShipDate || new Date().toISOString().split("T")[0],
+          
+          ListNum: item.listCode ? Number(item.listCode) : undefined,
+        };
+      }),
 
       DocumentSpecialLines: [],
       TaxExtension: {
@@ -464,7 +466,7 @@ export function QuotationForm() {
                     unMedida: line.MeasureUnit || "",
                     idUn: line.UoMEntry || 0,
                     unidade: line.UoMCode || "",
-                    itemName: line.U_SKILL_NP || "",
+                    itemName: line.itemName || "",
                     listCode: line.listCode,
                     DiscountPercent: line.DiscountPercent || 0,
                   }))
