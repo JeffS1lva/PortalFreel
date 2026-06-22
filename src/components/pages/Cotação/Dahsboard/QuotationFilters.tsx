@@ -4,10 +4,11 @@ import type React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { SearchIcon, Loader2Icon, AlertCircleIcon, RefreshCwIcon } from "lucide-react"
-import axios from "axios"
+import axios from "@/utils/axiosConfig";
 import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { apiBase } from "@/lib/api";
 
 interface QuotationFiltersProps {
   onDataLoaded?: (data: any[]) => void
@@ -55,7 +56,7 @@ export function QuotationFilters({
       const token = localStorage.getItem("token")
       if (!token) throw new Error("Token não encontrado")
 
-      const response = await axios.get(`/api/external/Cotacoes/Consulta/${encodeURIComponent(filtro)}`, {
+      const response = await axios.get(`${apiBase}/Cotacoes/Consulta/${encodeURIComponent(filtro)}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 

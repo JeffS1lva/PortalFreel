@@ -1,5 +1,6 @@
 // src/components/pages/Cotação/type.ts
 export interface DocumentLine {
+  U_SKILL_NP: any;
   listCode: any;
   idUn?: number;
   LineNum: number;
@@ -30,6 +31,7 @@ export interface ExtendedDocumentLine extends DocumentLine {
 }
 
 export interface QuotationSummary {
+  NumAtCard?: string;
   priceListNum?: number;        // ← melhor que number | undefined
   shipToDefault?: string;
   BPL_IDAssignedToInvoice: number;
@@ -201,6 +203,52 @@ export interface BPAddress {
   streetNo: string;
   bpCode: string;
   addressType: string;
+}
+
+
+
+export interface Client {
+  cardCode: string;
+  cardName: string;
+  cnpj?: string;
+  cardType?: string;
+  salesPersonCode?: number;
+  priceListNum?: number;
+  email?: string;
+  creditLimit?: number;
+  currentAccountBalance?: number;
+  paymentGroupCode?: number;
+  billtoDefault?: string;
+  upslpCd2?: string;
+  upslpCd3?: string;
+  upslpCd4?: string;
+  shipToDefault?: string;
+  bpAddresses: BPAddress[];
+  U_SKILL_FormaPagto?: string;
+  U_Portal?: string;
+  BPL_IDAssignedToInvoice?: number;
+  DocCurrency?: string;
+  DocRate?: number;
+  Confirmed?: string;
+  Cancelled?: string;
+}
+
+export interface ClientSearchProps {
+  quotation: Quotation;
+  updateQuotation: (field: keyof Quotation, value: any) => void;
+  stepRef: (el: HTMLDivElement | null) => void;
+  onClientSelected?: () => void;
+}
+
+export interface ErrorAlertProps {
+  type:
+    | "auth"
+    | "permission"
+    | "server"
+    | "connection"
+    | "not-found"
+    | "generic";
+  message: string;
 }
 
 export interface BaseStepProps {

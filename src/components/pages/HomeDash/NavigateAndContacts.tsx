@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  ArrowUpRight,
   Instagram,
   Linkedin,
   Mail,
@@ -10,102 +11,155 @@ import {
   Youtube,
 } from "lucide-react";
 
+const navItems = [
+  {
+    title: "Pedidos",
+    description: "Consulte e acompanhe seus pedidos",
+    url: "/pedidos",
+    icon: ShoppingBag,
+    gradient: "from-blue-500 to-indigo-600",
+    glow: "shadow-blue-500/25",
+    ring: "group-hover:ring-blue-500/30",
+  },
+  {
+    title: "Boletos",
+    description: "Acesse e gerencie seus boletos",
+    url: "/boletos",
+    icon: ScanBarcode,
+    gradient: "from-violet-500 to-purple-600",
+    glow: "shadow-violet-500/25",
+    ring: "group-hover:ring-violet-500/30",
+  },
+  {
+    title: "Inadimplentes",
+    description: "Veja parcelas e contas em atraso",
+    url: "/inadimplentes",
+    icon: AlertTriangle,
+    gradient: "from-rose-500 to-red-600",
+    glow: "shadow-rose-500/25",
+    ring: "group-hover:ring-rose-500/30",
+  },
+  {
+    title: "Rastrear Pedidos",
+    description: "Acompanhe a entrega em tempo real",
+    url: "/rastreio-pedidos",
+    icon: Truck,
+    gradient: "from-emerald-500 to-teal-600",
+    glow: "shadow-emerald-500/25",
+    ring: "group-hover:ring-emerald-500/30",
+  },
+];
+
+const contactItems = [
+  {
+    href: "tel:1145128600",
+    label: "Comercial",
+    sub: "(11) 4512-8600",
+    icon: Phone,
+    bg: "bg-slate-800 hover:bg-slate-700",
+    iconBg: "bg-slate-600",
+  },
+  {
+    href: "https://api.whatsapp.com/send?phone=551145128600",
+    label: "WhatsApp",
+    sub: "Fale conosco",
+    icon: Phone,
+    bg: "bg-[#128C7E] hover:bg-[#0f7568]",
+    iconBg: "bg-[#075E54]",
+  },
+  {
+    href: "https://mail.google.com/mail/?view=cm&fs=1&to=vendas20@polarfix.com.br&su=Contato%20via%20site%20Polar%20Fix",
+    label: "E-mail",
+    sub: "vendas@polarfix",
+    icon: Mail,
+    bg: "bg-red-600 hover:bg-red-700",
+    iconBg: "bg-red-800",
+  },
+  {
+    href: "https://www.instagram.com/polar_fix/",
+    label: "Instagram",
+    sub: "@polar_fix",
+    icon: Instagram,
+    bg: "bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 hover:opacity-90",
+    iconBg: "bg-white/20",
+  },
+  {
+    href: "https://www.linkedin.com/company/polar-fix/",
+    label: "LinkedIn",
+    sub: "polar-fix",
+    icon: Linkedin,
+    bg: "bg-[#0077B5] hover:bg-[#006097]",
+    iconBg: "bg-[#005885]",
+  },
+  {
+    href: "https://www.youtube.com/@PolarFixHospitalar",
+    label: "YouTube",
+    sub: "@PolarFixHospitalar",
+    icon: Youtube,
+    bg: "bg-[#CC0000] hover:bg-[#aa0000]",
+    iconBg: "bg-[#990000]",
+  },
+];
+
 export const NavigationAndContacts = () => {
-  const navigationItems = [
-    { title: "Pedidos", url: "/pedidos", icon: ShoppingBag },
-    { title: "Boletos", url: "/boletos", icon: ScanBarcode },
-    { title: "Inadimplentes", url: "/inadimplentes", icon: AlertTriangle },
-    { title: "Rastrear Pedidos", url: "/rastreio-pedidos", icon: Truck },
-  ];
-
-  const contactItems = [
-    {
-      href: "tel:1145128600",
-      title: "Comercial",
-      icon: Phone,
-      text: "(11) 4512-8600",
-      hoverColor: "hover:bg-slate-900",
-    },
-    {
-      href: "https://www.instagram.com/polar_fix/",
-      title: "Instagram",
-      icon: Instagram,
-      text: "Instagram",
-      hoverColor: "hover:bg-zinc-900",
-    },
-    {
-      href: "https://api.whatsapp.com/send?phone=551145128600",
-      title: "WhatsApp",
-      icon: Phone,
-      text: "WhatsApp",
-      hoverColor: "hover:bg-[#25D366] dark:hover:bg-[#25D366]",
-    },
-    {
-      href: "https://mail.google.com/mail/?view=cm&fs=1&to=vendas20@polarfix.com.br&su=Contato%20via%20site%20Polar%20Fix&body=Ol%C3%A1%20equipe%20Polar%20Fix%2C%0A%0AGostaria%20de%20obter%20mais%20informa%C3%A7%C3%B5es%20sobre%20os%20produtos%20e%20servi%C3%A7os%20oferecidos.%0A%0AAtenciosamente%2C%0A",
-      title: "E-mail",
-      icon: Mail,
-      text: "E-mail",
-      hoverColor: "hover:bg-red-800 dark:hover:bg-[#c4302b]",
-    },
-    {
-      href: "https://www.linkedin.com/company/polar-fix/posts/?feedView=all",
-      title: "Linkedin",
-      icon: Linkedin,
-      text: "Linkedin",
-      hoverColor: "hover:bg-[#2867b2] dark:hover:bg-[#2867b2]",
-    },
-    {
-      href: "https://www.youtube.com/@PolarFixHospitalar",
-      title: "Youtube",
-      icon: Youtube,
-      text: "Youtube",
-      hoverColor: "hover:bg-[#c4302b] dark:hover:bg-[#c4302b]",
-    },
-  ];
-
   return (
-    <div className="my-4 md:my-5">
-      <div className="flex flex-col sm:flex">
-        {/* Navegação */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 xs:grid-cols-4 md:grid-cols-4 gap-4">
-          {navigationItems.map((item, index) => (
+    <div className="space-y-6">
+
+      {/* Navegação rápida */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 px-0.5">
+          Acesso rápido
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {navItems.map((item) => (
             <a
-              key={index}
+              key={item.url}
               href={item.url}
-              className="flex flex-col items-center justify-center bg-white dark:bg-zinc-800 py-2 px-1 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+              className={`group relative flex flex-col gap-3 p-4 rounded-2xl border border-border bg-card hover:border-transparent transition-all duration-300 hover:shadow-xl ${item.glow} hover:ring-2 ${item.ring} hover:-translate-y-0.5`}
             >
-              <div className="bg-primary dark:bg-zinc-700 p-2 md:p-3 rounded-full mb-1 md:mb-2">
-                <item.icon size={20} className="text-white" />
+              {/* Ícone */}
+              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg ${item.glow}`}>
+                <item.icon className="w-5 h-5 text-white" />
               </div>
-              <span className="font-medium text-sm md:text-base text-zinc-800 dark:text-zinc-100">
-                {item.title}
-              </span>
+
+              {/* Texto */}
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                  {item.title}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                  {item.description}
+                </p>
+              </div>
+
+              {/* Seta */}
+              <ArrowUpRight className="absolute top-4 right-4 w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
             </a>
           ))}
         </div>
+      </div>
 
-        {/* Contatos */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 sm:grid-cols-3 gap-2 w-full mt-4">
-          {contactItems.map((contact, index) => (
+      {/* Contatos */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 px-0.5">
+          Fale com a Polar Fix
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          {contactItems.map((c) => (
             <a
-              key={index}
-              href={contact.href}
-              target={contact.href.startsWith("http") ? "_blank" : undefined}
-              rel={
-                contact.href.startsWith("http")
-                  ? "noopener noreferrer"
-                  : undefined
-              }
-              title={contact.title}
-              className={`flex justify-center items-center gap-2 md:gap-3 sm:w-full bg-primary dark:bg-zinc-700 shadow-sm shadow-black dark:shadow-zinc-900 px-3 py-2 rounded-sm ${contact.hoverColor} hover:text-white text-primary-foreground dark:text-white transition-colors`}
+              key={c.href}
+              href={c.href}
+              target={c.href.startsWith("http") ? "_blank" : undefined}
+              rel={c.href.startsWith("http") ? "noopener noreferrer" : undefined}
+              className={`group flex items-center gap-2.5 px-3 py-3 rounded-2xl ${c.bg} transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5`}
             >
-              <contact.icon
-                size={contact.title === "Comercial" ? 16 : 18}
-                className="flex-shrink-0"
-              />
-              <span className="font-medium text-sm md:text-base">
-                {contact.text}
-              </span>
+              <div className={`w-8 h-8 rounded-xl ${c.iconBg} flex items-center justify-center shrink-0`}>
+                <c.icon className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white leading-none">{c.label}</p>
+                <p className="text-[10px] text-white/70 mt-0.5 truncate">{c.sub}</p>
+              </div>
             </a>
           ))}
         </div>

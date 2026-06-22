@@ -3,7 +3,7 @@
 import { TableHeader } from "@/components/ui/table"
 
 import { useState, useEffect } from "react"
-import axios from "axios"
+import axios from "@/utils/axiosConfig";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -25,6 +25,8 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 interface VendasData {
   data_Lancamento: string
@@ -191,7 +193,7 @@ export function ReportVendas() {
 
   const getUserInternalCode = (): number => {
     try {
-      const authData = localStorage.getItem("authData")
+      const authData = tokenStore.getAuthData()
       return authData ? JSON.parse(authData).internalCode || 0 : 0
     } catch {
       return 0
@@ -210,11 +212,11 @@ export function ReportVendas() {
       }
 
       const token =
-        localStorage.getItem("authToken") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("access_token") ||
-        sessionStorage.getItem("authToken") ||
-        sessionStorage.getItem("token")
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken()
 
       if (!token) {
         throw new Error("Token de autorização não encontrado. Verifique se você está logado.")
@@ -233,7 +235,7 @@ export function ReportVendas() {
         currentYear = currentDate.getFullYear()
       }
 
-      const response = await axios.get("/api/external/Consultas/consvenrp", {
+      const response = await axios.get(`${apiBase}/Consultas/consvenrp`, {
         params: {
           slpCode: internalCode,
           numMes: currentMonth,
@@ -597,7 +599,7 @@ export function ReportVendas() {
                   />
                   <YAxis
                     domain={[0, "dataMax + 10000"]}
-                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                    tickFormatter={(value: number) => `${(value / 1000).toFixed(0)}k`}
                     fontSize={11}
                     stroke="#64748b"
                     tick={{ fill: "#64748b" }}

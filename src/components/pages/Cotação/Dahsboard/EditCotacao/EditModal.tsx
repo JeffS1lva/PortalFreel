@@ -51,8 +51,10 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { ItemsEditable } from "./ItemsView";
 import type { BPAddress, DocumentLine, QuotationSummary } from "../../type";
-import axios from "axios";
+import axios from "@/utils/axiosConfig";
 import { getFriendlyErrorMessage } from "../../utils/sapErrorHandler";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 interface EditQuotationModalProps {
   open: boolean;
@@ -95,7 +97,7 @@ const toSAPDate = (date: string | undefined): string | null => {
 const fetchAddressesFromClientEndpoint = async (
   cardCode: string
 ): Promise<BPAddress[]> => {
-  const token = localStorage.getItem("token");
+  const token = tokenStore.getToken();
   if (!token) {
     console.error("Token não encontrado");
     return [];
@@ -110,7 +112,7 @@ const fetchAddressesFromClientEndpoint = async (
   try {
     // FORÇA O PARÂMETRO filtro= EXATAMENTE COMO O ClientSearch FAZ
     const response = await fetch(
-      `/api/external/Clientes?filtro=${encodeURIComponent(cardCode)}`,
+      `${apiBase}/Clientes?filtro=${encodeURIComponent(cardCode)}`,
       {
         method: "GET",
         headers: {
@@ -192,14 +194,14 @@ const fetchItemName = async (
   itemCode: string,
   priceListNum: number
 ): Promise<string> => {
-  const token = localStorage.getItem("token");
+  const token = tokenStore.getToken();
   if (!token) return itemCode;
 
   const listNum = priceListNum || 1;
 
   try {
     const response = await fetch(
-      `/api/external/ListaPrecos?VFiltro=${itemCode}&VLista=${listNum}`,
+      `${apiBase}/ListaPrecos?VFiltro=${itemCode}&VLista=${listNum}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -255,9 +257,9 @@ export function EditQuotationModal({
       // 1. Busca lista de preços do cliente (você já faz isso)
       let priceList = 1;
       try {
-        const token = localStorage.getItem("token");
+        const token = tokenStore.getToken();
         if (token) {
-          const res = await axios.get("/api/external/Clientes", {
+          const res = await axios.get(`${apiBase}/Clientes`, {
             params: { filtro: quotation.cardCode },
             headers: { Authorization: `Bearer ${token}` },
           });

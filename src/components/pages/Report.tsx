@@ -10,6 +10,7 @@ import {
   Landmark,
   TrendingUp,
   EyeOff,
+  Layers,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -20,6 +21,7 @@ import { ReportClientGroup } from "./relatorios/ReportClientGroup";
 
 import { ReportProductSales } from "./relatorios/ReportProductSales";
 import { ReportProductSemVendas } from "./relatorios/ReportProductSemVendas";
+import { ReportVendSegment } from "./relatorios/ReportVendSegment";
 
 type DataView =
   | "vendas"
@@ -27,7 +29,8 @@ type DataView =
   | "produtos"
   | "grupoVendas"
   | "ReportProductSales"
-  | "ReportProductSemVendas";
+  | "ReportProductSemVendas"
+  | "ReportVendSegment";
 
 interface ViewConfig {
   id: DataView;
@@ -86,17 +89,23 @@ const viewConfigs: ViewConfig[] = [
     icon: EyeOff,
     color: "bg-violet-500/10 text-violet-400 border-purple-500/20",
   },
+  {
+    id: "ReportVendSegment",
+    title: "Vendas por Segmento",
+    description:
+      "Análise de vendas segmentada por tipo de mercado, com detalhamento por representante e total de vendas no período selecionado.",
+    icon: Layers,
+    color: "bg-teal-500/10 text-teal-400 border-teal-500/20",
+  },
 ];
 
 export function RelatorioPage() {
-  // Removed API-related state and functions as they're now in VendasView
   const [activeView, setActiveView] = useState<DataView>("vendas");
   const [_loading, _setLoading] = React.useState<boolean>(true);
 
   const renderViewContent = () => {
     switch (activeView) {
       case "vendas":
-        // Removed props as VendasView now manages its own data
         return <ReportClientVend />;
       case "clientes":
         return <ReportVendas />;
@@ -108,10 +117,69 @@ export function RelatorioPage() {
         return <ReportProductSales />;
       case "ReportProductSemVendas":
         return <ReportProductSemVendas />;
+      case "ReportVendSegment":
+        return <ReportVendSegment />;
       default:
         return null;
     }
   };
+
+  const renderCard = (view: ViewConfig) => {
+    const Icon = view.icon;
+    const isActive = activeView === view.id;
+
+    return (
+      <Card
+        key={view.id}
+        className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] sm:hover:scale-105 ${
+          isActive
+            ? "bg-primary/10 border-primary/30 shadow-lg shadow-primary/20"
+            : "bg-card/50 border-border/40 hover:bg-card/70"
+        } backdrop-blur-sm`}
+        onClick={() => setActiveView(view.id)}
+      >
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div
+              className={`p-2 sm:p-3 rounded-lg ${
+                isActive ? view.color : "bg-muted/50"
+              } transition-colors duration-300 flex-shrink-0`}
+            >
+              <Icon
+                className={`h-5 w-5 sm:h-6 sm:w-6 ${
+                  isActive ? "" : "text-muted-foreground"
+                }`}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3
+                className={`font-semibold text-sm sm:text-base ${
+                  isActive ? "text-primary" : "text-foreground"
+                } transition-colors duration-300 truncate`}
+              >
+                {view.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2 sm:line-clamp-none">
+                {view.description}
+              </p>
+            </div>
+            {isActive && (
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse flex-shrink-0" />
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const firstRow = viewConfigs.slice(0, 4);
+  const secondRow = viewConfigs.slice(4);
+  const secondRowCols =
+    secondRow.length === 3
+      ? "lg:grid-cols-3"
+      : secondRow.length === 2
+        ? "lg:grid-cols-2"
+        : "lg:grid-cols-1";
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,56 +202,17 @@ export function RelatorioPage() {
 
       <div className=" mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* KPI Cards */}
-        <div className="mb-6 sm:mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 px-6">
-            {viewConfigs.map((view) => {
-              const Icon = view.icon;
-              const isActive = activeView === view.id;
-
-              return (
-                <Card
-                  key={view.id}
-                  className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] sm:hover:scale-105 ${
-                    isActive
-                      ? "bg-primary/10 border-primary/30 shadow-lg shadow-primary/20"
-                      : "bg-card/50 border-border/40 hover:bg-card/70"
-                  } backdrop-blur-sm`}
-                  onClick={() => setActiveView(view.id)}
-                >
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center space-x-3 sm:space-x-4">
-                      <div
-                        className={`p-2 sm:p-3 rounded-lg ${
-                          isActive ? view.color : "bg-muted/50"
-                        } transition-colors duration-300 flex-shrink-0`}
-                      >
-                        <Icon
-                          className={`h-5 w-5 sm:h-6 sm:w-6 ${
-                            isActive ? "" : "text-muted-foreground"
-                          }`}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3
-                          className={`font-semibold text-sm sm:text-base ${
-                            isActive ? "text-primary" : "text-foreground"
-                          } transition-colors duration-300 truncate`}
-                        >
-                          {view.title}
-                        </h3>
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2 sm:line-clamp-none">
-                          {view.description}
-                        </p>
-                      </div>
-                      {isActive && (
-                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse flex-shrink-0" />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+        <div className="mb-6 sm:mb-8 flex flex-col gap-3 sm:gap-4 px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {firstRow.map(renderCard)}
           </div>
+          {secondRow.length > 0 && (
+            <div
+              className={`grid grid-cols-1 sm:grid-cols-2 ${secondRowCols} gap-3 sm:gap-4`}
+            >
+              {secondRow.map(renderCard)}
+            </div>
+          )}
         </div>
 
         <div className="transition-all duration-500 ease-in-out">

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 interface ParcelaData {
   dataVencimento?: string | Date;
@@ -47,14 +49,14 @@ export function useParcelaData(
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem("token");
+      const token = tokenStore.getToken();
       if (!token) {
         setError("Token não encontrado");
         return;
       }
 
       const response = await axios.get(
-        `/api/external/Parcelas/${boletoId}`,
+        `${apiBase}/Parcelas/${boletoId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

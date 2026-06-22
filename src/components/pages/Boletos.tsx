@@ -12,9 +12,10 @@ import {
   getPaginationRowModel,
   VisibilityState,
 } from "@tanstack/react-table";
-import { useBoletosColumns } from "@/hooks/useBoletosColumns";
-import { sortByStatusPriority } from "@/components/pages/BoletosColumns/StatusBadge";
-import axios from "axios";
+import { useBoletosColumns } from "@/components/pages/Boletos/columns/hooks/useBoletosColumns";
+import { sortByStatusPriority } from "@/components/pages/Boletos/BoletosBotttom/StatusBadge";
+import axios from "@/utils/axiosConfig";
+import { isAxiosError } from "axios";
 import {
   Table,
   TableBody,
@@ -31,6 +32,8 @@ import { Parcela } from "../../types/parcela";
 import EmptyBoletosError from "./FiltersBoletos/EmptyBoletosError";
 import FloatingLoading from "./Loading/Loading";
 import { jwtDecode } from "jwt-decode";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 interface TokenDecoded {
   exp: number;
@@ -51,7 +54,7 @@ const isTokenExpired = (token: string): boolean => {
 // Função para obter o internalCode do usuário logado
 const getUserInternalCode = (): number => {
   try {
-    const authData = localStorage.getItem("authData");
+    const authData = tokenStore.getAuthData();
     if (authData) {
       const userData = JSON.parse(authData);
       return userData.internalCode || 0;
@@ -99,7 +102,7 @@ const getPageSize = (): number => {
     if (width >= 1800) return 10; // Telas grandes (1800px+)
     return 6; // Telas pequenas (padrão)
   }
-  return 6; 
+  return 6;
 };
 
 export const Boletos: React.FC = () => {
@@ -109,14 +112,14 @@ export const Boletos: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
+    [],
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [searchValue, setSearchValue] = useState<string>("");
   const [searchType] = useState<"codigoPN" | "numNF" | "codigoBoleto">(
-    "codigoPN"
+    "codigoPN",
   );
   const [debouncedSearchValue, setDebouncedSearchValue] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(0);
@@ -168,16 +171,16 @@ export const Boletos: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = tokenStore.getToken();
 
     if (!token) {
-      localStorage.removeItem("token");
+      tokenStore.setToken(null as unknown as string);
       navigate("/login");
       return;
     }
 
     if (isTokenExpired(token)) {
-      localStorage.removeItem("token");
+      tokenStore.setToken(null as unknown as string);
       navigate("/login");
       return;
     }
@@ -223,7 +226,7 @@ export const Boletos: React.FC = () => {
   // Função para filtrar parcelas por período localmente (caso a API não suporte filtro por data)
   const filterParcelasByPeriod = (
     parcelas: Parcela[],
-    period: string
+    period: string,
   ): Parcela[] => {
     if (period === "all") {
       return parcelas;
@@ -241,7 +244,7 @@ export const Boletos: React.FC = () => {
       // Assumindo que existe um campo de data na parcela (ajuste conforme sua estrutura)
       // Pode ser 'dataVencimento', 'dataCriacao', 'dataEmissao', etc.
       const parcelaDate = new Date(
-        parcela.dataVencimento || parcela.dataCriacao || parcela.dataEmissao
+        parcela.dataVencimento || parcela.dataCriacao || parcela.dataEmissao,
       );
       return parcelaDate >= startDate && parcelaDate <= endDate;
     });
@@ -250,20 +253,20 @@ export const Boletos: React.FC = () => {
   // Função para buscar as parcelas com filtro de período
   const fetchParcelas = async (
     searchValue: string = "",
-    period: string = "3"
+    period: string = "3",
   ) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = tokenStore.getToken();
 
       if (!token) {
-        localStorage.removeItem("token");
+        tokenStore.setToken(null as unknown as string);
         navigate("/login");
         return;
       }
 
       if (isTokenExpired(token)) {
-        localStorage.removeItem("token");
+        tokenStore.setToken(null as unknown as string);
         navigate("/login");
         return;
       }
@@ -272,8 +275,8 @@ export const Boletos: React.FC = () => {
 
       if (!slpCode) {
         setError("Código do usuário não encontrado. Faça login novamente.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("authData");
+        tokenStore.setToken(null as unknown as string);
+        tokenStore.setAuthData(null as unknown as string);
         navigate("/login");
         return;
       }
@@ -291,9 +294,9 @@ export const Boletos: React.FC = () => {
         const endDate = getCurrentDate();
         params.startDate = startDate;
         params.endDate = endDate;
-        params.dataInicio = startDate; // Caso a API use nomes diferentes
+        params.dataInicio = startDate;
         params.dataFim = endDate;
-        params.periodo = period; // Enviar período como parâmetro adicional
+        params.periodo = period;
       }
 
       // Adicionar filtro de busca se houver
@@ -301,7 +304,7 @@ export const Boletos: React.FC = () => {
         params[searchType] = searchValue;
       }
 
-      const response = await axios.get("/api/external/Parcelas/parcelas", {
+      const response = await axios.get(`${apiBase}/Parcelas/parcelas`, {
         params,
         headers: {
           Authorization: `Bearer ${token}`,
@@ -349,24 +352,24 @@ export const Boletos: React.FC = () => {
         setError("Formato de dados recebido é inválido");
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("authData");
+          tokenStore.setToken(null as unknown as string);
+          tokenStore.setAuthData(null as unknown as string);
           navigate("/login");
         } else if (err.response?.status === 500) {
           setError(
-            "Erro interno no servidor. A API de parcelas pode estar indisponível."
+            "Erro interno no servidor. A API de parcelas pode estar indisponível.",
           );
         } else if (err.response?.status === 403) {
           setError(
-            "Acesso negado. Você não tem permissão para visualizar estes dados."
+            "Acesso negado. Você não tem permissão para visualizar estes dados.",
           );
         } else {
           setError(
             `Erro ao carregar boletos: ${
               err.response?.status || "Desconhecido"
-            }`
+            }`,
           );
         }
       } else {
@@ -410,7 +413,7 @@ export const Boletos: React.FC = () => {
   };
 
   if (loading) {
-    return <FloatingLoading/>;
+    return <FloatingLoading />;
   }
 
   if (error === "empty") {
@@ -486,7 +489,7 @@ export const Boletos: React.FC = () => {
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -508,7 +511,7 @@ export const Boletos: React.FC = () => {
                       <TableCell key={cell.id} className="dark:text-gray-200 ">
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}
@@ -551,7 +554,7 @@ export const Boletos: React.FC = () => {
                         {row.getVisibleCells().map((cell, index) => {
                           // Use a função helper para obter o texto do header
                           const header = getColumnHeaderText(
-                            cell.column.columnDef
+                            cell.column.columnDef,
                           );
 
                           return (
@@ -626,7 +629,7 @@ export const Boletos: React.FC = () => {
                               <div className="text-sm text-gray-900 dark:text-gray-100 font-medium text-right max-w-32 truncate">
                                 {flexRender(
                                   cell.column.columnDef.cell,
-                                  cell.getContext()
+                                  cell.getContext(),
                                 )}
                               </div>
                             </div>

@@ -1,4 +1,3 @@
-// PedidosFilter.tsx
 "use client";
 
 import * as React from "react";
@@ -18,10 +17,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, ChevronDown, ChevronUp, Filter } from "lucide-react";
+import {
+  CalendarIcon,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  X,
+  Search,
+  CalendarRange,
+  Clock,
+} from "lucide-react";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { CustomCalendar } from "./CustomCalendar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 // Tipos
 type SearchType =
@@ -65,6 +75,24 @@ interface PedidosFilterProps {
   ) => Promise<void>;
 }
 
+const PERIOD_OPTIONS = [
+  { value: "hoje", label: "Hoje", icon: Clock },
+  { value: "ontem", label: "Ontem", icon: Clock },
+  { value: "ultimos3Dias", label: "Últimos 3 Dias", icon: CalendarRange },
+  { value: "ultimos7Dias", label: "Últimos 7 Dias", icon: CalendarRange },
+  { value: "ultimos15Dias", label: "Últimos 15 Dias", icon: CalendarRange },
+  { value: "ultimos45Dias", label: "Últimos 45 Dias", icon: CalendarRange },
+] as const;
+
+const SEARCH_TYPE_OPTIONS = [
+  { value: "numeroPedido", label: "Número do Pedido", placeholder: "Digite o número do pedido..." },
+  { value: "pedidosCompra", label: "Pedidos de Compra", placeholder: "Digite o número do pedido de compra..." },
+  { value: "statusDoPedido", label: "Status do Pedido", placeholder: "Digite o status do pedido..." },
+  { value: "notaFiscal", label: "Nota Fiscal", placeholder: "Digite o número da nota fiscal..." },
+  { value: "dataLancamentoPedido", label: "Data de Lançamento", placeholder: "Selecione o período de lançamento..." },
+  { value: "dataParaEntrega", label: "Data de Entrega", placeholder: "Selecione o período de entrega..." },
+] as const;
+
 export const PedidosFilter = ({
   searchType,
   setSearchType,
@@ -76,7 +104,6 @@ export const PedidosFilter = ({
   setActiveDateRange,
   fetchPedidosWithDateRange,
 }: PedidosFilterProps) => {
-  // Estados para popovers
   const [isFromPopoverOpen, setIsFromPopoverOpen] = React.useState(false);
   const [isToPopoverOpen, setIsToPopoverOpen] = React.useState(false);
   const [dateFrom, setDateFrom] = React.useState<Date | undefined>(
@@ -86,95 +113,96 @@ export const PedidosFilter = ({
     activeDateRange.end
   );
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // Atualizar datas locais quando o período ativo muda
-  React.useEffect(() => {
+  useEffect(() => {
     setDateFrom(activeDateRange.start);
     setDateTo(activeDateRange.end);
   }, [activeDateRange]);
 
-  // Função para lidar com a mudança da data inicial
   const handleFromDateChange = (date: Date | undefined) => {
     setDateFrom(date);
     setIsFromPopoverOpen(false);
   };
 
-  // Função para lidar com a mudança da data final
   const handleToDateChange = (date: Date | undefined) => {
     setDateTo(date);
     setIsToPopoverOpen(false);
   };
 
-  // Aplicar filtro de data personalizado
   const handleApplyDateFilter = () => {
     if (dateFrom && dateTo) {
-      // Formatando as datas no formato YYYY-MM-DD esperado pela função filterFn
       const formatDateToString = (date: Date): string => {
         const year = date.getFullYear();
-        // Adicionar zero à esquerda se mês/dia for menor que 10
         const month = String(date.getMonth() + 1).padStart(2, "0");
         const day = String(date.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       };
 
-      // Configurando o intervalo de datas formatado corretamente
       const formattedDateRange = {
         start: formatDateToString(dateFrom),
         end: formatDateToString(dateTo),
       };
 
-      // Definindo o intervalo de datas ativo para o componente
       setActiveDateRange({
         start: dateFrom,
         end: dateTo,
       });
 
-      // Chamada com as datas formatadas como strings
       fetchPedidosWithDateRange(dateFrom, dateTo, formattedDateRange);
     }
   };
 
-  // Resetar os campos de busca
   const handleReset = () => {
     setSearchValue("");
-    // Reaplica o filtro de período atual - padrão para "hoje"
     applyPeriodFilter("hoje");
   };
 
-  // Placeholder dinâmico para o campo de busca
-  const getPlaceholder = () => {
-    switch (searchType) {
-      case "numeroPedido":
-        return "Buscar por número do pedido...";
-      case "pedidosCompra":
-        return "Buscar por número do Pedido de Compra...";
-      case "statusDoPedido":
-        return "Buscar por status do pedido...";
-      case "notaFiscal":
-        return "Buscar por nota fiscal...";
-      case "dataLancamentoPedido":
-        return "Selecione o período de lançamento...";
-      case "dataParaEntrega":
-        return "Selecione o período de entrega...";
-      default:
-        return "Buscar...";
-    }
+  const handleClearSearch = () => {
+    setSearchValue("");
   };
+
+  const currentSearchOption = SEARCH_TYPE_OPTIONS.find(
+    (opt) => opt.value === searchType
+  );
+
+  const isDateSearch =
+    searchType === "dataLancamentoPedido" || searchType === "dataParaEntrega";
+
+  const hasActiveFilters = searchValue || dateFrom || dateTo;
 
   return (
     <div className="space-y-4">
-      {/* Barra de busca principal - Sempre visível */}
-      <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
-        {/* Input de busca ou Date Pickers */}
+      {/* Barra de busca principal - Design moderno */}
+      <div className="flex flex-col lg:flex-row gap-3">
+        {/* Container de busca com design melhorado */}
         <div className="flex-1">
-          {searchType !== "dataLancamentoPedido" &&
-          searchType !== "dataParaEntrega" ? (
-            <Input
-              placeholder={getPlaceholder()}
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="w-full"
-            />
+          {!isDateSearch ? (
+            <div className="relative group">
+              <Search className={cn(
+                "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200",
+                isSearchFocused ? "text-primary" : "text-muted-foreground"
+              )} />
+              <Input
+                placeholder={currentSearchOption?.placeholder || "Buscar..."}
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className={cn(
+                  "pl-9 pr-9 transition-all duration-200",
+                  isSearchFocused && "ring-2 ring-primary/20 border-primary"
+                )}
+              />
+              {searchValue && (
+                <button
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-destructive transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Popover
@@ -184,12 +212,15 @@ export const PedidosFilter = ({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left font-normal"
+                    className={cn(
+                      "w-full justify-start text-left font-normal transition-all duration-200",
+                      dateFrom && "border-primary/50 bg-primary/5"
+                    )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">
                       {dateFrom
-                        ? format(dateFrom, "dd/MM/yyyy")
+                        ? format(dateFrom, "dd/MM/yyyy", { locale: ptBR })
                         : "Data inicial"}
                     </span>
                   </Button>
@@ -207,11 +238,16 @@ export const PedidosFilter = ({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left font-normal"
+                    className={cn(
+                      "w-full justify-start text-left font-normal transition-all duration-200",
+                      dateTo && "border-primary/50 bg-primary/5"
+                    )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">
-                      {dateTo ? format(dateTo, "dd/MM/yyyy") : "Data final"}
+                      {dateTo
+                        ? format(dateTo, "dd/MM/yyyy", { locale: ptBR })
+                        : "Data final"}
                     </span>
                   </Button>
                 </PopoverTrigger>
@@ -227,9 +263,8 @@ export const PedidosFilter = ({
           )}
         </div>
 
-        {/* Controles do lado direito - Visíveis apenas em telas grandes */}
+        {/* Botões de ação com design moderno - Desktop */}
         <div className="hidden lg:flex gap-2">
-          {/* Seletor de tipo de busca */}
           <Select
             value={searchType}
             onValueChange={(value) => {
@@ -237,186 +272,158 @@ export const PedidosFilter = ({
               setSearchValue("");
             }}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[180px] transition-all duration-200 hover:bg-muted/50">
               <SelectValue placeholder="Tipo de busca" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Tipo de Busca</SelectLabel>
-                <SelectItem value="numeroPedido">Número do Pedido</SelectItem>
-                <SelectItem value="pedidosCompra">Pedidos de Compra</SelectItem>
-                <SelectItem value="statusDoPedido">Status do Pedido</SelectItem>
-                <SelectItem value="notaFiscal">Nota Fiscal</SelectItem>
-                <SelectItem value="dataLancamentoPedido">
-                  Data de Lançamento
-                </SelectItem>
-                <SelectItem value="dataParaEntrega">Data de Entrega</SelectItem>
+                {SEARCH_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
 
-          {/* Seletor de período */}
           <Select
             value={currentPeriodFilter}
             onValueChange={(value) => applyPeriodFilter(value as PeriodFilter)}
           >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Selecione o período" />
+            <SelectTrigger className="w-[160px] transition-all duration-200 hover:bg-muted/50">
+              <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Período Recente</SelectLabel>
-                <SelectItem value="hoje">Hoje</SelectItem>
-                <SelectItem value="ontem">Ontem</SelectItem>
-                <SelectItem value="ultimos3Dias">Últimos 3 Dias</SelectItem>
-                <SelectItem value="ultimos7Dias">Últimos 7 Dias</SelectItem>
-                <SelectItem value="ultimos15Dias">Últimos 15 Dias</SelectItem>
-                <SelectItem value="ultimos45Dias">Últimos 45 Dias</SelectItem>
+                {PERIOD_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
 
-          {/* Botão de limpar filtros */}
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            className="flex-shrink-0"
-          >
-            Limpar
-          </Button>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              onClick={handleReset}
+              className="gap-2 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
+            >
+              <X className="h-4 w-4" />
+              Limpar
+            </Button>
+          )}
         </div>
 
         {/* Botões de ação mobile */}
-        <div className="flex gap-2 sm:flex-shrink-0 lg:hidden">
-          {searchType === "dataLancamentoPedido" ||
-          searchType === "dataParaEntrega" ? (
+        <div className="flex gap-2 lg:hidden">
+          {isDateSearch ? (
             <Button
               onClick={handleApplyDateFilter}
               disabled={!dateFrom || !dateTo}
-              className="flex-1 sm:flex-none"
+              className="flex-1"
             >
-              Filtrar
+              Aplicar Filtro
             </Button>
           ) : (
             <Button
-              onClick={() => {
-                /* Aplicar filtro de texto */
-              }}
+              onClick={() => {}}
               disabled={!searchValue}
-              className="flex-1 sm:flex-none"
+              className="flex-1"
             >
-              Filtrar
+              Buscar
             </Button>
           )}
           <Button
             variant="outline"
             onClick={handleReset}
-            className="flex-1 sm:flex-none"
+            className="flex-1"
           >
-            <span className="sm:inline">Limpar</span>
+            Limpar
           </Button>
         </div>
+
+        {/* Botão de filtros avançados mobile */}
+        <Button
+          variant="outline"
+          onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+          className="lg:hidden gap-2"
+        >
+          <Filter className="h-4 w-4" />
+          Filtros
+          {hasActiveFilters && (
+            <span className="ml-1 h-2 w-2 rounded-full bg-primary" />
+          )}
+          {isFiltersExpanded ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </Button>
       </div>
 
-      {/* Filtros avançados colapsáveis - Apenas mobile */}
-      <div className="lg:hidden">
-        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              Filtros Avançados
-            </span>
-          </div>
-          <button
-            onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            {isFiltersExpanded ? (
-              <ChevronUp className="h-5 w-5" />
-            ) : (
-              <ChevronDown className="h-5 w-5" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Conteúdo dos filtros avançados - Apenas mobile */}
+      {/* Filtros avançados expansíveis - Mobile com design melhorado */}
       <div
-        className={`lg:hidden space-y-4 ${!isFiltersExpanded ? "hidden" : ""}`}
+        className={cn(
+          "lg:hidden overflow-hidden transition-all duration-300 ease-in-out",
+          isFiltersExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        )}
       >
-        <div className="space-y-4 p-4 bg-white dark:bg-gray-900 rounded-lg border">
-          {/* Seção de Seletores */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Seletor de tipo de busca */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Tipo de busca
-              </label>
-              <Select
-                value={searchType}
-                onValueChange={(value) => {
-                  setSearchType(value as SearchType);
-                  setSearchValue("");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Tipo de busca" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Tipo de Busca</SelectLabel>
-                    <SelectItem value="numeroPedido">
-                      Número do Pedido
+        <div className="space-y-4 pt-4">
+          {/* Seletor de tipo de busca */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Tipo de busca
+            </label>
+            <Select
+              value={searchType}
+              onValueChange={(value) => {
+                setSearchType(value as SearchType);
+                setSearchValue("");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo de busca" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Tipo de Busca</SelectLabel>
+                  {SEARCH_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
-                    <SelectItem value="statusDoPedido">
-                      Status do Pedido
-                    </SelectItem>
-                    <SelectItem value="notaFiscal">Nota Fiscal</SelectItem>
-                    <SelectItem value="dataLancamentoPedido">
-                      Data de Lançamento
-                    </SelectItem>
-                    <SelectItem value="dataParaEntrega">
-                      Data de Entrega
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Seletor de período */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Período
-              </label>
-              <Select
-                value={currentPeriodFilter}
-                onValueChange={(value) =>
-                  applyPeriodFilter(value as PeriodFilter)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione o período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Período Recente</SelectLabel>
-                    <SelectItem value="hoje">Hoje</SelectItem>
-                    <SelectItem value="ontem">Ontem</SelectItem>
-                    <SelectItem value="ultimos3Dias">Últimos 3 Dias</SelectItem>
-                    <SelectItem value="ultimos7Dias">Últimos 7 Dias</SelectItem>
-                    <SelectItem value="ultimos15Dias">
-                      Últimos 15 Dias
-                    </SelectItem>
-                    <SelectItem value="ultimos45Dias">
-                      Últimos 45 Dias
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+          {/* Seletor de período */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Período
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {PERIOD_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  variant={currentPeriodFilter === option.value ? "default" : "outline"}
+                  onClick={() => applyPeriodFilter(option.value as PeriodFilter)}
+                  className="justify-start"
+                  size="sm"
+                >
+                  <option.icon className="mr-2 h-3 w-3" />
+                  {option.label}
+                </Button>
+              ))}
             </div>
           </div>
         </div>
       </div>
+
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import { tokenStore } from "@/utils/tokenStore";
 import { toast } from "sonner";
 
 // Create axios instance with timeout
@@ -79,11 +80,8 @@ const isAuthenticationError = (error: AxiosError): boolean => {
   return false;
 };
 
-// Função para limpar dados de autenticação
 const clearAuthData = (): void => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("isAuthenticated");
-  localStorage.removeItem("authData");
+  tokenStore.clear();
 };
 
 // Função para redirecionar para login
@@ -263,8 +261,7 @@ axiosInstance.interceptors.request.use(
     // Reset redirection flag on new requests (optional)
     // isRedirecting = false;
 
-    // Adiciona token se existir
-    const token = localStorage.getItem("token");
+    const token = tokenStore.getToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }

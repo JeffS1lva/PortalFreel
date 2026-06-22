@@ -1,0 +1,5 @@
+export {  PedidoTruck } from "@/components/pages/Rastreio-Pedidos/PedidoTruck"
+export {  PedidoSidebar } from "@/components/pages/Rastreio-Pedidos/PedidoSidebar"
+export {  PedidoDetails } from "@/components/pages/Rastreio-Pedidos/PedidosDetails"
+export * from "@/components/pages/Rastreio-Pedidos/"
+export * from "@/components/pages/Rastreio-Pedidos/"

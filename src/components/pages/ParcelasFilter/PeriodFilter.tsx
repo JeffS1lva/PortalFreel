@@ -9,26 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { parseDate } from "@/utils/boletos/formatters";
-
-// Interface para ParcelaAtrasada
-interface ParcelaAtrasada {
-  pedidosCompra: string;
-  codigoVendedor: number;
-  tipoDocumento: string;
-  idDocumento: string;
-  numeroDocumento: string;
-  dataEmissao: string;
-  dataVencimento: string;
-  codigoParceiroNegocio: string;
-  nomeParceiroNegocio: string;
-  valorTotal: number;
-  saldoDevido: number;
-  diasAtraso: number;
-  chaveNFe: string;
-  filial: string;
-  internalCode: number;
-  idRegistro: number;
-}
+import type { ParcelaAtrasada } from "@/types/parcelaAtrasada";
 
 // Opções de período por dias de atraso
 const DELAY_PERIOD_OPTIONS = [

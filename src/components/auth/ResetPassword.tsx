@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BadgeCheck, BadgeAlert } from "lucide-react";
 import { toast } from "sonner";
+import { apiBase } from "@/lib/api";
 
 interface ResetPasswordProps {
   closeModal: () => void;
@@ -74,7 +75,7 @@ export function ResetPassword({
 
         // Log para debug
 
-        const response = await fetch("/api/external/Auth/change-password", {
+        const response = await fetch(`${apiBase}/Auth/change-password`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import axios from "axios";
+import axios from "@/utils/axiosConfig";
 import {
   Loader2Icon,
   FileTextIcon,
@@ -19,6 +19,7 @@ import { QuotationCard } from "@/components/pages/Cotação/Dahsboard/QuotationC
 import { PdfViewerDialog } from "@/components/pages/Cotação/Dahsboard/PdfViewer";
 import { EditQuotationModal } from "@/components/pages/Cotação/Dahsboard/EditCotacao/EditModal";
 import type { QuotationSummary } from "./type";
+import { apiBase } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,7 +117,7 @@ export function QuotationDashboard() {
         return;
       }
 
-      const response = await axios.get("/api/external/Cotacoes", {
+      const response = await axios.get(`${apiBase}/Cotacoes`, {
         params: { slpCode, top: 50 },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -240,7 +241,7 @@ export function QuotationDashboard() {
       }
 
       const response = await axios.get(
-        `/api/external/Pedidos/imprime-cotacao/${quotation.docNum}`,
+        `${apiBase}/Pedidos/imprime-cotacao/${quotation.docNum}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -419,7 +420,7 @@ export function QuotationDashboard() {
       });
 
       const response = await axios.patch(
-        `/api/external/Cotacoes/${updatedQuotation.docEntry}`,
+        `${apiBase}/Cotacoes/${updatedQuotation.docEntry}`,
         payload,
         {
           headers: {

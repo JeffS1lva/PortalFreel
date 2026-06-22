@@ -5,6 +5,91 @@
     <link rel="icon" type="image/svg+xml" href="/src/assets/logoBrowser.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Portal</title>
+    <script>
+      (function () {
+        var PWD_HASH = "__CONSOLE_PWD_HASH__";
+        var unlocked = false;
+        var devOpen = false;
+
+        var methods = [
+          "log", "warn", "error", "info", "debug",
+          "table", "dir", "group", "groupEnd", "groupCollapsed",
+        ];
+
+        var orig = {};
+        var queue = [];
+
+        methods.forEach(function (m) {
+          orig[m] = console[m].bind(console);
+          console[m] = function () {
+            queue.push({ method: m, args: Array.prototype.slice.call(arguments) });
+          };
+        });
+
+        window.__origConsole = orig;
+
+        orig.log("%cATENÇÃO!", "color:#e11d48;font-size:48px;font-weight:bold;");
+        orig.log(
+          "%cEsta área é restrita.\nSe alguém pediu para você colar algo aqui, pode ser uma tentativa de fraude.",
+          "color:#f97316;font-size:14px;font-weight:600;line-height:1.6"
+        );
+        orig.log(
+          "%cPara desenvolvedores: unlockConsole(\"senha\")",
+          "color:#94a3b8;font-size:11px;"
+        );
+
+        async function hashInput(str) {
+          var buf = await crypto.subtle.digest(
+            "SHA-256",
+            new TextEncoder().encode(str)
+          );
+          return Array.from(new Uint8Array(buf))
+            .map(function (b) { return b.toString(16).padStart(2, "0"); })
+            .join("");
+        }
+
+        async function unlock(pass) {
+          if (!pass) return;
+          var hash = await hashInput(pass);
+          if (hash === PWD_HASH) {
+            methods.forEach(function (m) { console[m] = orig[m]; });
+            unlocked = true;
+            orig.log(
+              "%c✓ Console desbloqueado! Reproduzindo logs anteriores...",
+              "color:#22c55e;font-size:14px;font-weight:bold;"
+            );
+            queue.forEach(function (entry) {
+              orig[entry.method].apply(console, entry.args);
+            });
+            queue = [];
+            delete window.unlockConsole;
+          } else {
+            orig.warn("❌ Senha incorreta.");
+          }
+        }
+
+        window.unlockConsole = unlock;
+
+        setInterval(function () {
+          var threshold = 160;
+          var open =
+            window.outerWidth - window.innerWidth > threshold ||
+            window.outerHeight - window.innerHeight > threshold;
+
+          if (open && !devOpen) {
+            devOpen = true;
+            if (!unlocked) {
+              setTimeout(function () {
+                var input = prompt("🔒 Console restrito. Digite a senha para continuar:");
+                if (input !== null) unlock(input);
+              }, 200);
+            }
+          }
+
+          if (!open) devOpen = false;
+        }, 500);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -17,6 +17,7 @@ import { EditQuotationButton } from "@/components/pages/Cotação/Dahsboard/Edit
 import type { QuotationSummary } from "@/components/pages/Cotação/type"
 
 import { toast } from "sonner"
+import { apiBase } from "@/lib/api";
 
 interface QuotationCardProps {
   quotation: QuotationSummary
@@ -94,7 +95,7 @@ export function QuotationCard({
       if (!token) throw new Error("Sessão expirada")
 
       const response = await fetch(
-        `/api/external/Pedidos/imprime-cotacao/${quotation.docNum}`,
+        `${apiBase}/Pedidos/imprime-cotacao/${quotation.docNum}`,
         {
           method: "GET",
           headers: {

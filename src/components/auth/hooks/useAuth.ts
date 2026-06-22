@@ -8,6 +8,8 @@ import { makeApiCallWithFallback } from "../utils/api.utils";
 import { handleApiError, handleFirstAccessError, isErrorRequiringModal } from "../utils/error.utils";
 import { showErrorToast, showSuccessToast } from "@/utils/toast.utils";
 import axios from "@/utils/axiosConfig";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 export const useAuth = (onLoginSuccess: (userData: UserData) => void) => {
   const [email, setEmail] = useState<string>("");
@@ -57,8 +59,7 @@ export const useAuth = (onLoginSuccess: (userData: UserData) => void) => {
 
     try {
       const response = await makeApiCallWithFallback(
-        "/api/internal/Auth/login",
-        "/api/external/Auth/login",
+        "/Auth/login",
         { email, password }
       );
 
@@ -81,8 +82,8 @@ export const useAuth = (onLoginSuccess: (userData: UserData) => void) => {
         setShowSuggestionAlert(false);
 
         // Armazenamento seguro do token e dados do usuário
-        localStorage.setItem("token", token);
-        localStorage.setItem("isAuthenticated", "true");
+        tokenStore.setToken(token);
+        tokenStore.setAuthenticated(true);
         
         const login = email.split("@")[0];
         const userData: UserData = {
@@ -98,7 +99,7 @@ export const useAuth = (onLoginSuccess: (userData: UserData) => void) => {
         };
         
         // Armazenar dados do usuário para persistência
-        localStorage.setItem("authData", JSON.stringify(userData));
+        tokenStore.setAuthData(JSON.stringify(userData));
         
         // Garantir que o consentimento de cookies exists
         if (!localStorage.getItem("cookieConsent")) {
@@ -177,7 +178,7 @@ export const useAuth = (onLoginSuccess: (userData: UserData) => void) => {
 
     try {
       const response = await axios.post(
-        "/api/external/Auth/reset-password",
+        `${apiBase}/Auth/reset-password`,
         { email },
         {
           headers: { "Content-Type": "application/json" },

@@ -3,7 +3,7 @@
 import { TableHeader } from "@/components/ui/table";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "@/utils/axiosConfig";
 import {
   Card,
   CardContent,
@@ -52,6 +52,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 interface ClientGroupData {
   mes: number;
@@ -232,7 +234,7 @@ export function ReportClientGroup() {
 
   const getUserInternalCode = (): number => {
     try {
-      const authData = localStorage.getItem("authData");
+      const authData = tokenStore.getAuthData();
       return authData ? JSON.parse(authData).internalCode || 0 : 0;
     } catch {
       return 0;
@@ -253,11 +255,11 @@ export function ReportClientGroup() {
       }
 
       const token =
-        localStorage.getItem("authToken") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("access_token") ||
-        sessionStorage.getItem("authToken") ||
-        sessionStorage.getItem("token");
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken();
 
       if (!token) {
         throw new Error(
@@ -269,7 +271,7 @@ export function ReportClientGroup() {
       const currentYear =
         Number.parseInt(periodToUse) || new Date().getFullYear();
 
-      const response = await axios.get("/api/external/Consultas/consgrucl", {
+      const response = await axios.get(`${apiBase}/Consultas/consgrucl`, {
         params: {
           slpCode: internalCode,
           numAno: currentYear,
@@ -726,7 +728,7 @@ export function ReportClientGroup() {
                     <YAxis
                       className="text-xs"
                       tick={{ fontSize: 12 }}
-                      tickFormatter={(value) =>
+                      tickFormatter={(value: number) =>
                         `R$ ${(value / 1000).toFixed(0)}k`
                       }
                     />

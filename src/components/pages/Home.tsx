@@ -1,11 +1,14 @@
 import type { ParcelaAtrasada } from "@/types/parcelaAtrasada";
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "@/utils/axiosConfig";
+import { isAxiosError } from "axios";
 import { jwtDecode } from "jwt-decode";
 import { DashboardAnalytics } from "./HomeDash/DashBoardAnalytics";
 import { NavigationAndContacts } from "./HomeDash/NavigateAndContacts";
 import FloatingLoading from "@/components/pages/Loading/Loading"
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 interface TokenDecoded {
   exp: number;
@@ -24,7 +27,7 @@ const isTokenExpired = (token: string): boolean => {
 
 const getUserInternalCode = (): number => {
   try {
-    const authData = localStorage.getItem("authData");
+    const authData = tokenStore.getAuthData();
     return authData ? JSON.parse(authData).internalCode || 0 : 0;
   } catch {
     return 0;
@@ -84,6 +87,7 @@ export function Init() {
           filial: String(item.filial || ""),
           internalCode: Number(item.internalCode || item.codigoVendedor || 0),
           pedidosCompra: String(item.pedidosCompra || ""),
+          transportadora: String(item.transportadora || ""),
         };
       });
 
@@ -121,9 +125,9 @@ export function Init() {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem("token");
+      const token = tokenStore.getToken();
       if (!token || isTokenExpired(token)) {
-        localStorage.clear();
+        sessionStorage.clear();
         navigate("/login");
         return;
       }
@@ -131,12 +135,12 @@ export function Init() {
       const slpCode = getUserInternalCode();
       if (!slpCode) {
         setError("Código do usuário não encontrado. Faça login novamente.");
-        localStorage.clear();
+        sessionStorage.clear();
         navigate("/login");
         return;
       }
 
-      const response = await axios.get("/api/external/Parcelas/atrasadas", {
+      const response = await axios.get(`${apiBase}/Parcelas/atrasadas`, {
         params: { slpCode },
         headers: { Authorization: `Bearer ${token}` },
         timeout: 30000,
@@ -155,11 +159,11 @@ export function Init() {
       setError(null);
     } catch (err) {
 
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         const status = err.response?.status;
         switch (status) {
           case 401:
-            localStorage.clear();
+            sessionStorage.clear();
             navigate("/login");
             break;
           case 500:

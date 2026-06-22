@@ -1,16 +1,29 @@
 import path from "path";
+import { createHash } from "crypto";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
-  
+  const env = loadEnv(mode, process.cwd(), '');
+  const consolePwdHash = createHash('sha256')
+    .update(env.CONSOLE_PASSWORD ?? '')
+    .digest('hex');
+
   return {
-    // Configuração base essencial para produção
     base: isProduction ? '/' : '/',
-    
-    plugins: [react(), tailwindcss()],
+
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: 'console-password-hash',
+        transformIndexHtml(html) {
+          return html.replace('__CONSOLE_PWD_HASH__', consolePwdHash);
+        },
+      },
+    ],
     
     resolve: {
       alias: {
@@ -41,8 +54,7 @@ export default defineConfig(({ mode }) => {
         '/api/internal': {
           target: 'https://10.101.200.173:7002',
           changeOrigin: true,
-          secure: false, // Apenas para desenvolvimento
-          // CORREÇÃO: Não remover o /api do caminho, apenas o /internal
+          secure: false,
           rewrite: (path) => path.replace(/^\/api\/internal/, '/api'),
           headers: {
             Connection: 'keep-alive'

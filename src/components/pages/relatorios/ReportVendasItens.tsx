@@ -3,7 +3,7 @@
 import { TableHeader } from "@/components/ui/table"
 
 import { useState, useEffect } from "react"
-import axios from "axios"
+import axios from "@/utils/axiosConfig";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -25,6 +25,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 interface VendasGrupoData {
   grupo_Produto: string
@@ -187,7 +189,7 @@ export function ReportVendasItens() {
 
   const getUserInternalCode = (): number => {
     try {
-      const authData = localStorage.getItem("authData")
+      const authData = tokenStore.getAuthData()
       return authData ? JSON.parse(authData).internalCode || 0 : 0
     } catch {
       return 0
@@ -206,11 +208,11 @@ export function ReportVendasItens() {
       }
 
       const token =
-        localStorage.getItem("authToken") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("access_token") ||
-        sessionStorage.getItem("authToken") ||
-        sessionStorage.getItem("token")
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken()
 
       if (!token) {
         throw new Error("Token de autorização não encontrado. Verifique se você está logado.")
@@ -229,7 +231,7 @@ export function ReportVendasItens() {
         currentYear = currentDate.getFullYear()
       }
 
-      const response = await axios.get("/api/external/Consultas/consgrupr", {
+      const response = await axios.get(`${apiBase}/Consultas/consgrupr`, {
         params: {
           slpCode: internalCode,
           numMes: currentMonth,

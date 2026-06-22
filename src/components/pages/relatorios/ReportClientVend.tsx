@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "@/utils/axiosConfig";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 import {
   Users,
   Calendar,
@@ -130,7 +132,7 @@ const Paginacao = ({
 
 const getUserInternalCode = (): number => {
   try {
-    const authData = localStorage.getItem("authData");
+    const authData = tokenStore.getAuthData();
     return authData ? JSON.parse(authData).internalCode || 0 : 0;
   } catch {
     return 0;
@@ -162,11 +164,11 @@ export function ReportClientVend() {
       }
 
       const token =
-        localStorage.getItem("authToken") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("access_token") ||
-        sessionStorage.getItem("authToken") ||
-        sessionStorage.getItem("token");
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken() ||
+        tokenStore.getToken();
 
       if (!token) {
         throw new Error(
@@ -174,7 +176,7 @@ export function ReportClientVend() {
         );
       }
 
-      const response = await axios.get("/api/external/Consultas/consclive", {
+      const response = await axios.get(`${apiBase}/Consultas/consclive`, {
         params: { slpCode: internalCode },
         headers: {
           Authorization: `Bearer ${token}`,

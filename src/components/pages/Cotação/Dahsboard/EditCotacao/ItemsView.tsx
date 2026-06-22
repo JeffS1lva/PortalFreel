@@ -23,7 +23,9 @@ import {
   roundTo2,
 } from "@/components/pages/Cotação/utils/currency";
 import { useNumberInput } from "@/components/pages/Cotação/utils/useNumberInput";
-import axios from "axios";
+import axios from "@/utils/axiosConfig";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -175,10 +177,10 @@ export function ItemsEditable({
 
     try {
       setIsSearching(true);
-      const token = localStorage.getItem("token");
+      const token = tokenStore.getToken();
       if (!token) throw new Error("Token não encontrado");
 
-      const response = await axios.get("/api/external/ListaPrecos", {
+      const response = await axios.get(`${apiBase}/ListaPrecos`, {
         params: { VFiltro: filtro, VLista: listNum },
         headers: { Authorization: `Bearer ${token}` },
       });

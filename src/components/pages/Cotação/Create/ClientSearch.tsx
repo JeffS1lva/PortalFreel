@@ -1,25 +1,45 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useTransform,
+  useSpring,
+} from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "@/utils/axiosConfig";
+import { isAxiosError } from "axios";
 import { InputCotacao } from "@/components/ui/input";
 import {
-  Search,
   AlertCircle,
   WifiOff,
   ShieldAlert,
   ServerCrash,
   UserX,
-  Building2,
-  Mail,
-  FileText,
-  FileChartColumn,
-  ArrowDown10,
+  X,
+  ChevronRight,
+  Grid3X3,
+  ArrowUpRight,
+  Fingerprint,
+  QrCode,
+  Crown,
+  Zap,
+  ScanLine,
+  Mic,
 } from "lucide-react";
-import type { Quotation } from "@/components/pages/Cotação/type";
+import type { Client, ClientSearchProps } from "@/components/pages/Cotação/type";
+import { AllClientsModal } from "./AllClientModal";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface BPAddress {
   addressName: string;
@@ -30,39 +50,6 @@ interface BPAddress {
   city?: string;
   state?: string;
   zipCode?: string;
-}
-
-interface Client {
-  cardCode: string;
-  cardName: string;
-  cnpj?: string;
-  cardType?: string;
-  salesPersonCode?: number;
-  priceListNum?: number;
-  email?: string;
-  creditLimit?: number;
-  currentAccountBalance?: number;
-  paymentGroupCode?: number;
-  billtoDefault?: string;
-  upslpCd2?: string;
-  upslpCd3?: string;
-  upslpCd4?: string;
-  shipToDefault?: string;
-  bpAddresses: BPAddress[];
-  U_SKILL_FormaPagto?: string;
-  U_Portal?: string;
-  BPL_IDAssignedToInvoice?: number;
-  DocCurrency?: string;
-  DocRate?: number;
-  Confirmed?: string;
-  Cancelled?: string;
-}
-
-interface ClientSearchProps {
-  quotation: Quotation;
-  updateQuotation: (field: keyof Quotation, value: any) => void;
-  stepRef: (el: HTMLDivElement | null) => void;
-  onClientSelected?: () => void;
 }
 
 interface ErrorAlertProps {
@@ -76,56 +63,165 @@ interface ErrorAlertProps {
   message: string;
 }
 
+// Componente de partículas flutuantes
+const FloatingParticles = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(12)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 bg-[#1e3a5f]/20 rounded-full"
+          initial={{
+            x: Math.random() * 100 + "%",
+            y: Math.random() * 100 + "%",
+            scale: 0,
+          }}
+          animate={{
+            y: [null, Math.random() * -100 + "%"],
+            scale: [0, 1, 0],
+            opacity: [0, 0.6, 0],
+          }}
+          transition={{
+            duration: Math.random() * 10 + 10,
+            repeat: Infinity,
+            delay: Math.random() * 5,
+            ease: "linear",
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Componente de onda sonora visual
+const SoundWave = ({ isActive }: { isActive: boolean }) => {
+  return (
+    <div className="flex items-center gap-0.5 h-4">
+      {[...Array(5)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="w-0.5 bg-[#f4c430] rounded-full"
+          animate={
+            isActive
+              ? {
+                  height: [4, 16, 4],
+                }
+              : { height: 4 }
+          }
+          transition={{
+            duration: 0.5,
+            repeat: isActive ? Infinity : 0,
+            delay: i * 0.1,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Card 3D tilt effect - Desativado em mobile para performance
+const TiltCard = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const rotateX = useTransform(y, [-100, 100], [10, -10]);
+  const rotateY = useTransform(x, [-100, 100], [-10, 10]);
+
+  const springRotateX = useSpring(rotateX, { stiffness: 300, damping: 30 });
+  const springRotateY = useSpring(rotateY, { stiffness: 300, damping: 30 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Desativa efeito 3D em telas touch
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set(e.clientX - centerX);
+    y.set(e.clientY - centerY);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      className={className}
+      style={{
+        rotateX: springRotateX,
+        rotateY: springRotateY,
+        transformStyle: "preserve-3d",
+      }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// Modal de todos os clientes - Otimizado para mobile
+
+
 function ErrorAlert({ type, message }: ErrorAlertProps) {
   const getErrorConfig = () => {
     switch (type) {
       case "auth":
         return {
           icon: ShieldAlert,
-          bgColor: "bg-amber-500/5",
-          borderColor: "border-amber-500/20",
-          textColor: "text-amber-900 dark:text-amber-200",
-          iconColor: "text-amber-600 dark:text-amber-400",
+          bgColor: "bg-amber-500/10",
+          borderColor: "border-amber-500/30",
+          textColor: "text-amber-200",
+          iconColor: "text-amber-400",
         };
       case "permission":
         return {
           icon: UserX,
-          bgColor: "bg-red-500/5",
-          borderColor: "border-red-500/20",
-          textColor: "text-red-900 dark:text-red-200",
-          iconColor: "text-red-600 dark:text-red-400",
+          bgColor: "bg-red-500/10",
+          borderColor: "border-red-500/30",
+          textColor: "text-red-200",
+          iconColor: "text-red-400",
         };
       case "server":
         return {
           icon: ServerCrash,
-          bgColor: "bg-purple-500/5",
-          borderColor: "border-purple-500/20",
-          textColor: "text-purple-900 dark:text-purple-200",
-          iconColor: "text-purple-600 dark:text-purple-400",
+          bgColor: "bg-purple-500/10",
+          borderColor: "border-purple-500/30",
+          textColor: "text-purple-200",
+          iconColor: "text-purple-400",
         };
       case "connection":
         return {
           icon: WifiOff,
-          bgColor: "bg-orange-500/5",
-          borderColor: "border-orange-500/20",
-          textColor: "text-orange-900 dark:text-orange-200",
-          iconColor: "text-orange-600 dark:text-orange-400",
+          bgColor: "bg-orange-500/10",
+          borderColor: "border-orange-500/30",
+          textColor: "text-orange-200",
+          iconColor: "text-orange-400",
         };
       case "not-found":
         return {
           icon: AlertCircle,
-          bgColor: "bg-slate-500/5",
-          borderColor: "border-slate-500/20",
-          textColor: "text-slate-900 dark:text-slate-200",
-          iconColor: "text-slate-600 dark:text-slate-400",
+          bgColor: "bg-slate-500/10",
+          borderColor: "border-slate-500/30",
+          textColor: "text-slate-200",
+          iconColor: "text-slate-400",
         };
       default:
         return {
           icon: AlertCircle,
-          bgColor: "bg-slate-500/5",
-          borderColor: "border-slate-500/20",
-          textColor: "text-slate-900 dark:text-slate-200",
-          iconColor: "text-slate-600 dark:text-slate-400",
+          bgColor: "bg-slate-500/10",
+          borderColor: "border-slate-500/30",
+          textColor: "text-slate-200",
+          iconColor: "text-slate-400",
         };
     }
   };
@@ -139,13 +235,11 @@ function ErrorAlert({ type, message }: ErrorAlertProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -8, scale: 0.96 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className={`mt-3 p-4 rounded-xl border ${config.bgColor} ${config.borderColor} backdrop-blur-sm`}
+      className={`p-3 md:p-4 rounded-lg md:rounded-xl border backdrop-blur-sm ${config.bgColor} ${config.borderColor}`}
     >
-      <div className="flex items-start gap-3">
-        <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${config.iconColor}`} />
-        <p
-          className={`text-sm font-medium leading-relaxed ${config.textColor}`}
-        >
+      <div className="flex items-start gap-2.5 md:gap-3">
+        <Icon className={`h-4 w-4 md:h-5 md:w-5 mt-0.5 flex-shrink-0 ${config.iconColor}`} />
+        <p className={`text-xs md:text-sm font-medium leading-relaxed ${config.textColor}`}>
           {message}
         </p>
       </div>
@@ -167,7 +261,58 @@ export function ClientSearch({
     message: string;
   } | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [, setFocusedIndex] = useState(-1);
+  const [, setIsFocused] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [showAllClients, setShowAllClients] = useState(false);
+  const [allClients, setAllClients] = useState<Client[]>([]);
+  const [loadingAll, setLoadingAll] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseX.set(e.clientX - rect.left);
+    mouseY.set(e.clientY - rect.top);
+  };
+
+  const toggleVoiceSearch = () => {
+    setIsListening(!isListening);
+    if (!isListening) {
+      setTimeout(() => {
+        setIsListening(false);
+        setSearchTerm("INDÚSTRIA POLAR");
+      }, 2000);
+    }
+  };
+
+  const loadAllClients = async () => {
+    setLoadingAll(true);
+    setShowAllClients(true);
+
+    try {
+      const token = tokenStore.getToken();
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const response = await axios.get(`${apiBase}/Clientes`, {
+        params: { top: 1000, skip: 0 },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = response.data.value || response.data.data || response.data;
+      setAllClients(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Erro ao carregar clientes:", err);
+      setAllClients([]);
+    } finally {
+      setLoadingAll(false);
+    }
+  };
 
   const isTokenExpired = (token: string): boolean => {
     try {
@@ -179,7 +324,7 @@ export function ClientSearch({
   };
 
   const getUserInternalCode = (): string | null => {
-    const authData = localStorage.getItem("authData");
+    const authData = tokenStore.getAuthData();
     if (authData) {
       try {
         const parsed = JSON.parse(authData);
@@ -194,7 +339,7 @@ export function ClientSearch({
   const removeDuplicateClients = (clients: Client[]): Client[] => {
     return clients.filter(
       (client, index, self) =>
-        index === self.findIndex((c) => c.cardCode === client.cardCode)
+        index === self.findIndex((c) => c.cardCode === client.cardCode),
     );
   };
 
@@ -202,7 +347,7 @@ export function ClientSearch({
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem("token");
+      const token = tokenStore.getToken();
 
       if (!token) {
         navigate("/login");
@@ -210,7 +355,7 @@ export function ClientSearch({
       }
 
       if (isTokenExpired(token)) {
-        localStorage.removeItem("token");
+        tokenStore.setToken(null as unknown as string);
         navigate("/login");
         return;
       }
@@ -223,22 +368,18 @@ export function ClientSearch({
           message:
             "Não foi possível identificar o código do usuário. Por favor, realize o login novamente.",
         });
-        localStorage.removeItem("token");
-        localStorage.removeItem("authData");
+        tokenStore.setToken(null as unknown as string);
+        tokenStore.setAuthData(null as unknown as string);
         navigate("/login");
         return;
       }
 
       const params = { filtro: term };
 
-      const response = await axios.get("/api/external/Clientes", {
+      const response = await axios.get(`${apiBase}/Clientes`, {
         params,
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      //console.log("Status da resposta:", response.status);
-      //console.log("Headers completos:", response.headers);
-      //console.log("Dados brutos retornados (response.data):", response.data);
 
       const clientsData =
         response.data.value || response.data.data || response.data;
@@ -265,7 +406,7 @@ export function ClientSearch({
         });
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         const status = err.response?.status;
 
         if (status === 401) {
@@ -273,8 +414,8 @@ export function ClientSearch({
             type: "auth",
             message: "Sessão expirada. Faça login novamente.",
           });
-          localStorage.removeItem("token");
-          localStorage.removeItem("authData");
+          tokenStore.setToken(null as unknown as string);
+          tokenStore.setAuthData(null as unknown as string);
           navigate("/login");
         } else if (status === 404) {
           setError({
@@ -335,7 +476,7 @@ export function ClientSearch({
     updateQuotation("CreditLimit", selectedClient.creditLimit);
     updateQuotation(
       "CurrentAccountBalance",
-      selectedClient.currentAccountBalance
+      selectedClient.currentAccountBalance,
     );
     updateQuotation("PaymentGroupCode", selectedClient.paymentGroupCode);
     updateQuotation("BilltoDefault", selectedClient.billtoDefault);
@@ -346,7 +487,7 @@ export function ClientSearch({
     updateQuotation("BPAddresses", selectedClient.bpAddresses);
 
     const deliveryAddr = selectedClient.bpAddresses.find(
-      (addr: BPAddress) => addr.addressName === selectedClient.shipToDefault
+      (addr: BPAddress) => addr.addressName === selectedClient.shipToDefault,
     );
     const uSkillEndEnt = deliveryAddr?.addressName || "";
     const uPolEnderEntrega = [
@@ -367,12 +508,12 @@ export function ClientSearch({
     updateQuotation("U_POL_EnderEntrega", uPolEnderEntrega);
     updateQuotation(
       "U_SKILL_FormaPagto",
-      selectedClient.U_SKILL_FormaPagto || ""
+      selectedClient.U_SKILL_FormaPagto || "",
     );
     updateQuotation("U_Portal", selectedClient.U_Portal || "");
     updateQuotation(
       "BPL_IDAssignedToInvoice",
-      selectedClient.BPL_IDAssignedToInvoice || 1
+      selectedClient.BPL_IDAssignedToInvoice || 1,
     );
     updateQuotation("DocCurrency", selectedClient.DocCurrency || "R$");
     updateQuotation("DocRate", selectedClient.DocRate || 1);
@@ -392,263 +533,382 @@ export function ClientSearch({
     setFocusedIndex(-1);
   };
 
-  return (
-    <div
-      ref={stepRef}
-      tabIndex={-1}
-      className="min-h-[70vh] flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 focus:outline-none relative"
-      role="region"
-      aria-label="Buscar cliente"
-    >
-      {/* Fundo decorativo sutil - com overflow-hidden isolado */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
-      </div>
+  const clearSearch = () => {
+    setSearchTerm("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setError(null);
+    inputRef.current?.focus();
+  };
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-4xl mt-16 mb-20"
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showAllClients) {
+          setShowAllClients(false);
+        } else {
+          clearSearch();
+        }
+      }
+      if (
+        e.key === "Enter" &&
+        searchTerm.length >= 3 &&
+        !loading &&
+        !showAllClients
+      ) {
+        fetchClientQuotations(searchTerm);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [searchTerm, loading, showAllClients]);
+
+  return (
+    <TooltipProvider>
+      <div
+        ref={stepRef}
+        onMouseMove={handleMouseMove}
+        className="relative w-full  overflow-hidden flex flex-col  py-15 md:py-50 lg:py-40"
       >
-        <div className="text-center mb-10 space-y-4">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="relative inline-block"
-          >
-            <h1 className="relative text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-balance">
-              <span className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent blur-sm opacity-50">
-                Encontre seu cliente
-              </span>
-              <span className="relative bg-gradient-to-r from-foreground via-primary/90 to-foreground bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-                Encontre seu cliente
-              </span>
-              <span className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent bg-clip-text text-transparent">
-                Encontre seu cliente
-              </span>
-            </h1>
-            <div className="absolute -bottom-2 left-0 right-0 h-[3px] overflow-hidden">
-              <div className="h-full w-full bg-gradient-to-r from-transparent via-primary to-transparent opacity-50 animate-shimmer" />
-            </div>
-          </motion.div>
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-2xl mx-auto text-pretty"
-          >
-            Digite o código ou nome para iniciar uma nova cotação
-          </motion.p>
+        {/* Gradiente base */}
+        <div className="absolute inset-0 z-0" />
+
+        {/* Grid animado - Menos opaco em mobile */}
+        <div className="absolute inset-0 opacity-10 md:opacity-20 z-0">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `linear-gradient(rgba(244,196,48,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(244,196,48,0.1) 1px, transparent 1px)`,
+              backgroundSize: "40px 40px",
+              animation: "gridMove 20s linear infinite",
+            }}
+          />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="relative"
-        >
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center gap-4 bg-background border border-border rounded-2xl p-5 shadow-lg hover:shadow-xl focus-within:shadow-xl transition-all duration-300">
-              <Search className="h-6 w-6 text-muted-foreground flex-shrink-0" />
-              <InputCotacao
-                value={searchTerm.toUpperCase()}
-                onChange={handleSearchChange}
-                placeholder="Ex: C35646 ou Nome da Empresa"
-                className="border-0 text-xl sm:text-2xl h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent placeholder:text-muted-foreground/50 flex-1 font-medium"
-                aria-label="Buscar cliente"
-                disabled={loading}
-              />
-              {loading && (
-                <div className="relative h-6 w-6 flex-shrink-0">
-                  <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
-                  <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                </div>
-              )}
-            </div>
-          </div>
+        <FloatingParticles />
 
-          {/* Caixa de Sugestões - CORRIGIDA */}
-          <AnimatePresence>
-            {showSuggestions && suggestions.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute left-0 right-0 top-full mt-3 mx-auto w-full max-w-4xl bg-background border border-border rounded-2xl shadow-2xl z-[9999] overflow-hidden"
-              >
-                <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                  <div className="p-2 space-y-1">
-                    {suggestions.map((suggestion, index) => (
+        {/* Conteúdo principal - AJUSTADO: Desktop mais compacto, mobile com espaçamento */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 relative z-10 w-full  py-8 md:py-4 lg:py-0 ">
+          
+          {/* Título - Desktop: margens menores, Mobile: margens maiores */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-center mb-4 md:mb-3 lg:mb-4 shrink-0"
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-bold text-[#1e3a5f] mb-2 md:mb-1 lg:mb-2 tracking-tight leading-tight">
+              <span className="relative inline-block">
+                Encontre
+                <motion.span
+                  className="absolute -inset-1 bg-[#f4c430]/20 -skew-x-6 rounded blur-sm"
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+              </span>
+              <br className="sm:hidden" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f4c430] via-[#1e3a5f] to-[#f4c430] animate-gradient bg-[length:200%_auto]">
+                {" "}
+                seu cliente
+              </span>
+            </h2>
+            <p className="text-slate-500 text-sm md:text-sm max-w-md mx-auto px-4 sm:px-0 mt-1 md:mt-0">
+              Busca inteligente com visualização completa da base
+            </p>
+          </motion.div>
+
+          {/* Interface de busca - Centralizada */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="w-full max-w-lg md:max-w-xl lg:max-w-2xl relative px-2 sm:px-0"
+          >
+            {/* Container principal - Estilo mobile otimizado */}
+            <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-slate-200/60 shadow-2xl shadow-slate-900/10 overflow-hidden">
+              {/* Input */}
+              <div className="relative flex items-center p-2 md:p-3">
+                <TiltCard className="flex-shrink-0 flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-[#1e3a5f] to-[#0d2137] text-white mr-2 md:mr-3 shadow-lg">
+                  {isListening ? (
+                    <SoundWave isActive={true} />
+                  ) : (
+                    <Fingerprint className="w-6 h-6 md:w-7 md:h-7" />
+                  )}
+                </TiltCard>
+
+                <div className="flex-1 relative min-w-0">
+                  <InputCotacao
+                    ref={inputRef}
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                    placeholder="Código, nome ou CNPJ..."
+                    className="w-full bg-transparent border-0 text-[#1e3a5f] text-base md:text-lg placeholder:text-slate-400 focus-visible:ring-0 h-12 md:h-14 font-medium truncate px-0"
+                    disabled={loading || isListening}
+                  />
+                  {isListening && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-[#f4c430] text-xs md:text-sm font-medium"
+                    >
+                      Ouvindo...
+                    </motion.div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 md:gap-2 ml-1 md:ml-2">
+                  {/* Botão de voz - Visível apenas em tablets/desktop com tooltip */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <motion.button
-                        key={suggestion.cardCode || index}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.2, delay: index * 0.03 }}
-                        onClick={() => handleSelectSuggestion(suggestion)}
-                        onMouseEnter={() => setFocusedIndex(index)}
-                        className={`w-full p-4 rounded-xl transition-all duration-200 text-left group ${
-                          focusedIndex === index
-                            ? "bg-accent/50 shadow-md"
-                            : "hover:bg-accent/30"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={toggleVoiceSearch}
+                        className={`hidden md:flex w-10 h-10 md:w-12 md:h-12 rounded-xl items-center justify-center transition-colors ${
+                          isListening
+                            ? "bg-red-500/20 text-red-400 animate-pulse"
+                            : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-[#1e3a5f]"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
-                              <p className="font-semibold text-base truncate group-hover:text-primary transition-colors">
-                                {suggestion.cardCode}
-                              </p>
-                            </div>
-                            <p className="text-sm font-medium text-foreground/90 line-clamp-1">
-                              {suggestion.cardName}
-                            </p>
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1.5">
-                                <FileText className="h-3.5 w-3.5" />
-                                {suggestion.cnpj || "Não informado"}
-                              </span>
-                              {suggestion.email && (
-                                <span className="flex items-center gap-1.5">
-                                  <Mail className="h-3.5 w-3.5" />
-                                  {suggestion.email}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Search className="h-4 w-4 text-primary" />
-                            </div>
-                          </div>
-                        </div>
+                        {isListening ? (
+                          <ScanLine className="w-5 h-5 " />
+                        ) : (
+                          <Mic className="w-5 h-5" />
+                        )}
                       </motion.button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={8}>
+                      <p className="text-xs font-medium">Busca por áudio</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-          {/* Erro */}
-          <AnimatePresence>
-            {error && <ErrorAlert type={error.type} message={error.message} />}
-          </AnimatePresence>
-        </motion.div>
+                  {searchTerm ? (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={clearSearch}
+                      className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-[#1e3a5f] flex items-center justify-center"
+                    >
+                      <X className="w-5 h-5" />
+                    </motion.button>
+                  ) : null}
 
-        {/* Conteúdo de apoio */}
-        <AnimatePresence>
-          {!showSuggestions && !error && !loading && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="mt-7 w-full mx-auto space-y-22"
-            >
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Digite pelo menos{" "}
-                  <span className="font-semibold text-foreground">
-                    3 caracteres
-                  </span>{" "}
-                  para iniciar a busca
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                {[
-                  {
-                    label: "Código",
-                    example: "C35646",
-                    icon: <ArrowDown10 />,
-                    gradient: "from-blue-500/10 via-cyan-500/10 to-blue-500/5",
-                  },
-                  {
-                    label: "Nome",
-                    example: "Indústria XYZ Ltda",
-                    icon: <Building2 />,
-                    gradient:
-                      "from-violet-500/10 via-purple-500/10 to-violet-500/5",
-                  },
-                  {
-                    label: "CNPJ",
-                    example: "12.345.678/0001-99",
-                    icon: <FileChartColumn />,
-                    gradient:
-                      "from-emerald-500/10 via-teal-500/10 to-emerald-500/5",
-                  },
-                ].map((item, idx) => (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 + idx * 0.1 }}
-                    className="group relative cursor-default"
-                  >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 rounded-3xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-700 group-hover:duration-200" />
-                    <div className="relative p-6 rounded-2xl bg-gradient-to-br from-background via-background to-muted/30 border border-border/50 hover:border-primary/30 backdrop-blur-sm shadow-lg hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 overflow-hidden">
-                      <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-500">
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
-                            backgroundSize: "24px 24px",
-                          }}
-                        />
-                      </div>
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}
-                      />
-                      <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 group-hover:scale-150" />
-                      <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-accent/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-all duration-700 delay-100" />
-                      <div className="relative z-10">
-                        <div className="mb-4 flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-primary/20">
-                              <span className="text-2xl group-hover:scale-110 transition-transform duration-300">
-                                {item.icon}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest group-hover:text-primary transition-colors duration-300">
-                                {item.label}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex gap-1 opacity-30 group-hover:opacity-100 transition-opacity duration-300">
-                            <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-                            <div className="w-1 h-1 rounded-full bg-primary animate-pulse delay-75" />
-                            <div className="w-1 h-1 rounded-full bg-primary animate-pulse delay-150" />
-                          </div>
-                        </div>
-                        <div className="relative pl-1">
-                          <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/0 via-primary/50 to-primary/0 scale-y-0 group-hover:scale-y-100 transition-transform duration-500" />
-                          <p className="text-base font-mono font-semibold text-foreground/80 group-hover:text-foreground group-hover:translate-x-1 transition-all duration-300 line-clamp-1">
-                            {item.example}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden">
-                        <div className="h-full w-full bg-gradient-to-r from-transparent via-primary to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
-                      </div>
-                      <div
-                        className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -translate-x-full group-hover:translate-x-full"
-                        style={{ transition: "all 0.8s ease" }}
+                  {loading ? (
+                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-[#f4c430] flex items-center justify-center">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                        className="w-5 h-5 md:w-6 md:h-6 border-2 border-[#1e3a5f] border-t-transparent rounded-full"
                       />
                     </div>
-                  </motion.div>
-                ))}
+                  ) : (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() =>
+                        searchTerm.length >= 3 &&
+                        fetchClientQuotations(searchTerm)
+                      }
+                      disabled={searchTerm.length < 3}
+                      className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-[#f4c430] to-[#d4a820] text-[#1e3a5f] font-bold flex items-center justify-center shadow-lg shadow-[#f4c430]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ArrowUpRight className="w-5 h-5 md:w-6 md:h-6" />
+                    </motion.button>
+                  )}
+                </div>
               </div>
+
+              {/* Resultados - Altura adaptativa */}
+              <AnimatePresence mode="wait">
+                {showSuggestions && suggestions.length > 0 ? (
+                  <motion.div
+                    key="results"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="border-t border-slate-100 max-h-[40vh] md:max-h-[35vh] overflow-y-auto"
+                  >
+                    <div className="p-2">
+                      {suggestions.map((client, idx) => (
+                        <motion.button
+                          key={client.cardCode}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          whileHover={{
+                            x: 4,
+                            backgroundColor: "rgba(30, 58, 95, 0.05)",
+                          }}
+                          whileTap={{ scale: 0.99 }}
+                          onClick={() => handleSelectSuggestion(client)}
+                          onMouseEnter={() => setFocusedIndex(idx)}
+                          className="w-full flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl text-left group transition-colors"
+                        >
+                          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-[#1e3a5f]/10 to-[#0d2137]/10 border border-[#1e3a5f]/10 flex items-center justify-center text-[#1e3a5f] font-bold text-base md:text-lg group-hover:from-[#f4c430] group-hover:to-[#d4a820] group-hover:text-[#1e3a5f] transition-all flex-shrink-0">
+                            {client.cardName?.charAt(0) || "C"}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-[#1e3a5f] font-semibold truncate group-hover:text-[#f4c430] transition-colors text-sm md:text-base">
+                              {client.cardName}
+                            </h4>
+                            <div className="flex items-center gap-2 md:gap-3 text-xs text-slate-500">
+                              <span className="font-mono text-[#f4c430] font-medium">
+                                {client.cardCode}
+                              </span>
+                              <span className="w-1 h-1 bg-slate-300 rounded-full hidden sm:inline" />
+                              <span className="truncate hidden sm:inline">
+                                {client.cnpj || "Sem CNPJ"}
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+
+            {/* Botão de visualizar todos - Desktop: margem menor */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="mt-3 md:mt-2 lg:mt-3 text-center"
+            >
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={loadAllClients}
+                className="group inline-flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl bg-white/80 backdrop-blur-md border border-slate-200 hover:bg-white hover:border-[#f4c430]/30 transition-all text-sm md:text-base shadow-sm cursor-pointer"
+              >
+                <Grid3X3 className="w-4 h-4 md:w-5 md:h-5 text-[#f4c430]" />
+                <span className="font-medium text-[#1e3a5f]">
+                  Ver todos os clientes
+                </span>
+                <motion.span
+                  animate={{ x: [0, 4, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-[#1e3a5f]" />
+                </motion.span>
+              </motion.button>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </div>
+
+            {/* Erro */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="mt-3 md:mt-4"
+                >
+                  <ErrorAlert type={error.type} message={error.message} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Features - Grid responsivo - Desktop: margem menor e mais compacto */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="mt-6 md:mt-4 lg:mt-15 grid grid-cols-3 gap-4 md:gap-6 max-w-lg md:max-w-xl w-full px-4"
+          >
+            {[
+              { icon: Zap, label: "Instantâneo", color: "#f4c430" },
+              { icon: Crown, label: "Preciso", color: "#1e3a5f" },
+              { icon: QrCode, label: "Moderno", color: "#f4c430" },
+            ].map((feat, idx) => (
+              <motion.div
+                key={feat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 + idx * 0.1 }}
+                whileHover={{ y: -3 }}
+                className="flex flex-col items-center gap-2 md:gap-2 text-center"
+              >
+                <div
+                  className="w-12 h-12 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center text-white shadow-lg"
+                  style={{ backgroundColor: feat.color }}
+                >
+                  <feat.icon className="w-6 h-6 md:w-6 md:h-6" />
+                </div>
+                <span className="text-slate-500 text-xs md:text-xs font-medium">
+                  {feat.label}
+                </span>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Modal de todos os clientes */}
+        <AllClientsModal
+          isOpen={showAllClients}
+          onClose={() => setShowAllClients(false)}
+          onSelect={handleSelectSuggestion}
+          clients={allClients}
+          loading={loadingAll}
+        />
+
+        {/* Estilos globais otimizados */}
+        <style>{`
+          @keyframes gridMove {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(40px); }
+          }
+          @keyframes gradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+          }
+          .animate-gradient {
+            animation: gradient 3s ease infinite;
+          }
+          
+          /* Scrollbar estilizada */
+          ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+          }
+          ::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          ::-webkit-scrollbar-thumb {
+            background: rgba(30, 58, 95, 0.2);
+            border-radius: 3px;
+          }
+          ::-webkit-scrollbar-thumb:hover {
+            background: rgba(30, 58, 95, 0.4);
+          }
+          
+          /* Prevenir zoom em inputs no iOS */
+          @supports (-webkit-touch-callout: none) {
+            input, textarea, select {
+              font-size: 16px;
+            }
+          }
+          
+          /* Animações suaves em dispositivos que suportam */
+          @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+              animation-duration: 0.01ms !important;
+              animation-iteration-count: 1 !important;
+              transition-duration: 0.01ms !important;
+            }
+          }
+        `}</style>
+      </div>
+    </TooltipProvider>
   );
 }

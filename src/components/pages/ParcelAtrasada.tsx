@@ -12,8 +12,9 @@ import {
   getPaginationRowModel,
   VisibilityState,
 } from "@tanstack/react-table";
-import { useParcelasAtrasadasColumns } from "@/hooks/useParcelasAtrasadas";
-import axios from "axios";
+import { useParcelasAtrasadasColumns } from "@/components/pages/Inadimplentes/hooks/useParcelasAtrasadasColumns";
+import axios from "@/utils/axiosConfig";
+import { isAxiosError } from "axios";
 import {
   Table,
   TableBody,
@@ -32,6 +33,8 @@ import ParcelasFilter from "./ParcelasFilter/ParcelasFilter";
 import { filterParcelasByDelayPeriod } from "@/components/pages/ParcelasFilter/PeriodFilter";
 import EmptyBoletosError from "./ParcelasFilter/EmptyBoletosError";
 import { StatusLegend } from "./ParcelasFilter/StatusLegend";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 // ========== INTERFACES ==========
 interface TokenDecoded {
@@ -57,7 +60,7 @@ const isTokenExpired = (token: string): boolean => {
 
 const getUserInternalCode = (): number => {
   try {
-    const authData = localStorage.getItem("authData");
+    const authData = tokenStore.getAuthData();
     return authData ? JSON.parse(authData).internalCode || 0 : 0;
   } catch {
     return 0;
@@ -394,6 +397,7 @@ export const ParcelasAtrasadas: React.FC = () => {
           filial: String(item.filial || ""),
           internalCode: Number(item.internalCode || item.codigoVendedor || 0),
           pedidosCompra: String(item.pedidosCompra || ""),
+          transportadora: String(item.transportadora || ""),
         };
       });
   }, []);
@@ -428,9 +432,9 @@ export const ParcelasAtrasadas: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem("token");
+      const token = tokenStore.getToken();
       if (!token || isTokenExpired(token)) {
-        localStorage.clear();
+        sessionStorage.clear();
         navigate("/login");
         return;
       }
@@ -438,12 +442,12 @@ export const ParcelasAtrasadas: React.FC = () => {
       const slpCode = getUserInternalCode();
       if (!slpCode) {
         setError("Código do usuário não encontrado. Faça login novamente.");
-        localStorage.clear();
+        sessionStorage.clear();
         navigate("/login");
         return;
       }
 
-      const response = await axios.get("/api/external/Parcelas/atrasadas", {
+      const response = await axios.get(`${apiBase}/Parcelas/atrasadas`, {
         params: { slpCode },
         headers: { Authorization: `Bearer ${token}` },
         timeout: 30000,
@@ -463,11 +467,11 @@ export const ParcelasAtrasadas: React.FC = () => {
       setParcelasExibidas(normalizedData);
       setError(normalizedData.length === 0 ? "empty" : null);
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         const status = err.response?.status;
         switch (status) {
           case 401:
-            localStorage.clear();
+            sessionStorage.clear();
             navigate("/login");
             break;
           case 500:
@@ -503,6 +507,8 @@ export const ParcelasAtrasadas: React.FC = () => {
         selectedDelayPeriod === "all"
           ? dadosFiltrados
           : filterParcelasByDelayPeriod(dadosFiltrados, selectedDelayPeriod);
+
+          
 
       setParcelasExibidas(dadosComFiltroPeriodo);
       setColumnFilters([]);
@@ -618,7 +624,7 @@ export const ParcelasAtrasadas: React.FC = () => {
 
       <ParcelasFilter
         data={parcelasOriginais}
-        onFilteredDataChange={handleFilteredDataChange}
+        onFilteredDataChange={handleFilteredDataChange as any}
         loading={loading}
         selectedPeriod={selectedPeriod}
         onPeriodChange={handlePeriodChange}

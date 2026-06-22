@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useState } from "react";
-import axios from "axios";
+import axios from "@/utils/axiosConfig";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 interface SaleData {
   codigo: string;
@@ -170,7 +172,7 @@ export function ReportProductSales() {
 
   const getUserInternalCode = (): number => {
     try {
-      const authData = localStorage.getItem("authData");
+      const authData = tokenStore.getAuthData();
       return authData ? JSON.parse(authData).internalCode || 0 : 0;
     } catch {
       return 0;
@@ -193,7 +195,7 @@ export function ReportProductSales() {
 
       const internalCode = getUserInternalCode();
       const token =
-        localStorage.getItem("authToken") || localStorage.getItem("token");
+        tokenStore.getToken() || tokenStore.getToken();
 
       if (!token || internalCode === 0) {
         throw new Error(
@@ -206,7 +208,7 @@ export function ReportProductSales() {
         filtro: productName || "",
       };
 
-      const response = await axios.get("/api/external/Consultas/ultvendas", {
+      const response = await axios.get(`${apiBase}/Consultas/ultvendas`, {
         params: ultParams,
         headers: {
           Authorization: `Bearer ${token}`,

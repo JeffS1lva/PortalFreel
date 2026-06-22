@@ -13,26 +13,8 @@ import {
 } from "@/components/ui/select";
 import { parseDate } from "@/utils/boletos/formatters";
 import { DelayPeriodFilter } from "@/components/pages/ParcelasFilter/PeriodFilter";
+import type { ParcelaAtrasada } from "@/types/parcelaAtrasada";
 
-// Interface para tipagem dos dados - UPDATED to match the main type
-interface ParcelaAtrasada {
-  codigoVendedor: number;
-  tipoDocumento: string;
-  idDocumento: string;
-  numeroDocumento: string;
-  dataEmissao: string;
-  dataVencimento: string;
-  codigoParceiroNegocio: string;
-  nomeParceiroNegocio: string;
-  valorTotal: number;
-  saldoDevido: number;
-  diasAtraso: number;
-  chaveNFe: string;
-  filial: string;
-  internalCode: number;
-  idRegistro: number;
-  pedidosCompra: string; // ADDED missing property
-}
 
 type FilterType =
   | "codigoParceiroNegocio"

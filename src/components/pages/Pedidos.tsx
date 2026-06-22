@@ -12,7 +12,8 @@ import {
   getPaginationRowModel,
   type VisibilityState,
 } from "@tanstack/react-table";
-import axios from "axios";
+import axios from "@/utils/axiosConfig";
+import { isAxiosError } from "axios";
 import {
   Table,
   TableBody,
@@ -28,8 +29,14 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import EmptyPedidosError from "./Pedidos/EmptyPedidosError";
 import FloatingLoading from "./Loading/Loading";
-import { usePedidosColumns, type Pedido } from "./Pedidos/PedidosColumns";
+// IMPORTAÇÃO ATUALIZADA - usando os componentes componentizados
+import {
+  usePedidosColumns,
+  type Pedido,
+} from "@/components/pages/Pedidos/columns";
 import { PedidosLegend } from "./Pedidos/PedidosCompra/PedidosStatus";
+import { apiBase } from "@/lib/api";
+import { tokenStore } from "@/utils/tokenStore";
 
 interface TokenDecoded {
   exp: number;
@@ -43,7 +50,7 @@ type PeriodFilter =
   | "ultimos3Dias"
   | "ultimos7Dias"
   | "ultimos15Dias"
-  | "ultimos45Dias"
+  | "ultimos45Dias";
 
 export type SearchType =
   | "numeroPedido"
@@ -90,7 +97,7 @@ const isTokenExpired = (token: string): boolean => {
 // Função para obter o internalCode do usuário logado
 const getUserInternalCode = (): number => {
   try {
-    const authData = localStorage.getItem("authData");
+    const authData = tokenStore.getAuthData();
     if (authData) {
       const userData = JSON.parse(authData);
       return userData.internalCode || 0;
@@ -121,7 +128,7 @@ export const Pedidos: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
+    [],
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -143,6 +150,7 @@ export const Pedidos: React.FC = () => {
   const navigate = useNavigate();
 
   // Usar o hook usePedidosColumns para obter as definições de colunas
+  // AGORA VINDO DOS COMPONENTES COMPONENTIZADOS
   const columns = usePedidosColumns();
 
   // Hook para monitorar mudanças no tamanho da tela
@@ -165,16 +173,16 @@ export const Pedidos: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = tokenStore.getToken();
 
     if (!token) {
-      localStorage.removeItem("token");
+      tokenStore.setToken(null as unknown as string);
       navigate("/login");
       return;
     }
 
     if (isTokenExpired(token)) {
-      localStorage.removeItem("token");
+      tokenStore.setToken(null as unknown as string);
       navigate("/login");
       return;
     }
@@ -213,7 +221,7 @@ export const Pedidos: React.FC = () => {
   const fetchPedidosWithDateRange = async (startDate: Date, endDate: Date) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = tokenStore.getToken();
 
       if (!token) {
         navigate("/login");
@@ -221,7 +229,7 @@ export const Pedidos: React.FC = () => {
       }
 
       if (isTokenExpired(token)) {
-        localStorage.removeItem("token");
+        tokenStore.setToken(null as unknown as string);
         navigate("/login");
         return;
       }
@@ -231,8 +239,8 @@ export const Pedidos: React.FC = () => {
 
       if (!slpCode) {
         setError("Código do usuário não encontrado. Faça login novamente.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("authData");
+        tokenStore.setToken(null as unknown as string);
+        tokenStore.setAuthData(null as unknown as string);
         navigate("/login");
         return;
       }
@@ -257,17 +265,22 @@ export const Pedidos: React.FC = () => {
 
       // Datas ajustadas para garantir inclusão do dia completo
       const response = await axios.get(
-        "/api/external/Pedidos/consultar-pedidos",
+        `${apiBase}/Pedidos/consultar-pedidos`,
         {
           params,
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
+      
 
       let pedidosData =
         response.data.value || response.data.data || response.data;
+
+      console.log("📦 Dados crus vindos da API:", pedidosData);
+      console.log("Quantidade de registros brutos:", pedidosData?.length ?? 0);
+      console.table(pedidosData?.slice(0, 5)); // mostra os 5 primeiros (evita travar o console)
 
       if (Array.isArray(pedidosData)) {
         // Remover duplicatas por numeroPedido (se necessário)
@@ -276,7 +289,7 @@ export const Pedidos: React.FC = () => {
         pedidosData.sort(
           (
             a: { dataLancamentoPedido: string | number | Date },
-            b: { dataLancamentoPedido: string | number | Date }
+            b: { dataLancamentoPedido: string | number | Date },
           ) => {
             if (!a.dataLancamentoPedido || !b.dataLancamentoPedido) {
               return 0;
@@ -293,16 +306,16 @@ export const Pedidos: React.FC = () => {
             const dataA = new Date(
               Number(yearA),
               Number(monthA) - 1,
-              Number(dayA)
+              Number(dayA),
             ).getTime();
             const dataB = new Date(
               Number(yearB),
               Number(monthB) - 1,
-              Number(dayB)
+              Number(dayB),
             ).getTime();
 
             return dataB - dataA; // Ordem decrescente
-          }
+          },
         );
 
         const pedidosUnicos = removeDuplicatePedidos(pedidosData);
@@ -321,24 +334,24 @@ export const Pedidos: React.FC = () => {
         setError("empty");
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("authData");
+          tokenStore.setToken(null as unknown as string);
+          tokenStore.setAuthData(null as unknown as string);
           navigate("/login");
         } else if (err.response?.status === 500) {
           setError(
-            "Erro interno no servidor. A API de pedidos pode estar indisponível."
+            "Erro interno no servidor. A API de pedidos pode estar indisponível.",
           );
         } else if (err.response?.status === 403) {
           setError(
-            "Acesso negado. Você não tem permissão para visualizar estes dados."
+            "Acesso negado. Você não tem permissão para visualizar estes dados.",
           );
         } else {
           setError(
             `Erro ao carregar pedidos: ${
               err.response?.status || "Desconhecido"
-            }`
+            }`,
           );
         }
       } else {
@@ -447,7 +460,7 @@ export const Pedidos: React.FC = () => {
     // Tenta buscar os pedidos novamente usando o mesmo intervalo de datas
     fetchPedidosWithDateRange(
       activeDateRange.start || new Date(),
-      activeDateRange.end || new Date()
+      activeDateRange.end || new Date(),
     );
   };
 
@@ -536,7 +549,7 @@ export const Pedidos: React.FC = () => {
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -550,21 +563,18 @@ export const Pedidos: React.FC = () => {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="md:table-row"
                 >
-                  {/* Layout Desktop - Tabela Normal */}
-                  <div className="hidden md:contents">
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </div>
+                  {/* Layout Desktop - Células normais da tabela */}
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="hidden md:table-cell">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
 
-                  {/* Layout Mobile - Card Format Melhorado */}
+                  {/* Layout Mobile - Card Format */}
                   <TableCell className="md:hidden p-0" colSpan={columns.length}>
                     <div className="bg-white dark:bg-gray-800 rounded-xl m-2 p-4 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
                       {/* Header do Card */}
@@ -587,14 +597,14 @@ export const Pedidos: React.FC = () => {
                           </div>
                           <div>
                             <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                              Pedido - {row.original.numeroPedido}
+                              Pedido - {row.original?.numeroPedido || "-"}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {row.original.dataLancamentoPedido
+                              {row.original?.dataLancamentoPedido
                                 ? (() => {
                                     // Usar split para preservar a data exata sem ajuste de timezone
                                     const dateString = String(
-                                      row.original.dataLancamentoPedido
+                                      row.original.dataLancamentoPedido,
                                     );
                                     const [year, month, day] =
                                       dateString.split("-");
@@ -618,7 +628,7 @@ export const Pedidos: React.FC = () => {
                         {row.getVisibleCells().map((cell, index) => {
                           // Fixed: Use the helper function to get header text
                           const header = getColumnHeaderText(
-                            cell.column.columnDef
+                            cell.column.columnDef,
                           );
 
                           return (
@@ -693,7 +703,7 @@ export const Pedidos: React.FC = () => {
                               <div className="text-sm text-gray-900 dark:text-gray-100 font-medium text-right max-w-32 truncate">
                                 {flexRender(
                                   cell.column.columnDef.cell,
-                                  cell.getContext()
+                                  cell.getContext(),
                                 )}
                               </div>
                             </div>

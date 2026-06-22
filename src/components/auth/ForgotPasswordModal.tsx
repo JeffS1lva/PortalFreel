@@ -43,8 +43,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
     try {
       const response = await makeApiCallWithFallback(
-        "/api/internal/Auth/reset-password",
-        "/api/external/Auth/reset-password",
+        "/Auth/reset-password",
         { email: emailToReset },
         30000
       );

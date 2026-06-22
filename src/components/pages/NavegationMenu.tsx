@@ -2,14 +2,13 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Home,
   ShoppingBag,
   ScanBarcode,
   Settings,
   ChevronDown,
-  User2,
   LogOut,
   Edit,
   Truck,
@@ -19,19 +18,19 @@ import {
   Sun,
   Moon,
   Calculator,
-  Sparkles,
   Eye,
   Plus,
   ArrowUpFromLine as ChartNoAxesCombined,
 } from "lucide-react"
 import LogoDark from "@/assets/logo.png"
 import LogoLight from "@/assets/logoBranco.png"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@radix-ui/react-dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "../ui/button"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { ResetPassword } from "../auth/ResetPassword"
 import { ProfileSelector } from "./NavegationMenu/ProfileSelector"
+import { apiBase } from "@/lib/api";
 
 type NavItemChild = {
   title: string
@@ -156,14 +155,14 @@ const items: NavItem[] = [
     url: "/inicio",
     icon: Home,
     notificationKey: "home" as const,
-    gradient: "from-blue-500 to-cyan-500",
+    gradient: "from-blue-900 to-blue-900",
   },
   {
     title: "Pedidos",
     url: "/pedidos",
     icon: ShoppingBag,
     notificationKey: "orders" as const,
-    gradient: "from-purple-500 to-pink-500",
+    gradient: "from-blue-900 to-blue-900",
     children: [
       { title: "Visualizar Pedidos", url: "/pedidos" },
       { title: "Rastrear Pedidos", url: "/pedidos/rastrear-pedidos", icon: Truck },
@@ -173,7 +172,7 @@ const items: NavItem[] = [
     title: "Cotação",
     icon: Calculator,
     notificationKey: "quotes" as const,
-    gradient: "from-blue-400 via-blue-500 to-violet-500",
+    gradient: "from-blue-900 to-blue-900",
     children: [
       { title: "Visualizar Cotações", url: "/cotacoes?embed=true" },
       { title: "Realizar Cotação", url: "/cotacao/create?embed=true" },
@@ -184,21 +183,21 @@ const items: NavItem[] = [
     url: "/boletos",
     icon: ScanBarcode,
     notificationKey: "tickets" as const,
-    gradient: "from-orange-500 to-red-500",
+    gradient: "from-blue-900 to-blue-900",
   },
   {
     title: "Inadimplentes",
     url: "/inadimplentes",
     icon: AlertTriangle,
     notificationKey: "defaulters" as const,
-    gradient: "from-red-500 to-rose-500",
+    gradient: "from-blue-900 to-blue-900",
   },
   {
     title: "Relatórios",
     url: "/relatorio",
     icon: ChartNoAxesCombined,
     notificationKey: "defaulters" as const,
-    gradient: "from-violet-700 to-red-500",
+    gradient: "from-blue-900 to-blue-900",
   },
 ]
 
@@ -227,6 +226,26 @@ export function NavegationMenu({
   const [isUserProfileOpen, setUserProfileOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [activeMega, setActiveMega] = useState<string | null>(null)
+  const navRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setActiveMega(null); setIsProfileOpen(false) } }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
+
+  useEffect(() => {
+    if (!activeMega) return
+    const onMouseDown = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setActiveMega(null)
+      }
+    }
+    document.addEventListener("mousedown", onMouseDown)
+    return () => document.removeEventListener("mousedown", onMouseDown)
+  }, [activeMega])
 
   useEffect(() => {
     const loadUserData = () => {
@@ -314,7 +333,7 @@ export function NavegationMenu({
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
-      const response = await fetch("/api/external/Auth/logout", {
+      const response = await fetch(`${apiBase}/Auth/logout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -361,7 +380,6 @@ export function NavegationMenu({
 
   const getHeaderHeight = () => (isMobile ? "h-14" : isTablet ? "h-15" : "h-16")
   const getAvatarSize = () => (isMobile ? "h-7 w-7" : isTablet ? "h-8 w-8" : "h-8 w-8")
-  const getAvatarSizeLarge = () => (isMobile ? "h-10 w-10" : isTablet ? "h-11 w-11" : "h-12 w-12")
   const getContainerPadding = () => (isMobile ? "px-3" : isTablet ? "px-4" : isLargeScreen ? "" : "px-6")
 
   return (
@@ -373,74 +391,80 @@ export function NavegationMenu({
               <ThemeAwareLogo />
             </div>
 
-            <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2">
+            <nav ref={navRef} className="hidden lg:flex items-center gap-1">
               {items.map((item) => {
                 if (item.children) {
-                  const isParentActive = isActiveRoute(item.url) || item.children.some((c) => isActiveRoute(c.url))
+                  const isParentActive = item.children.some((c) => isActiveRoute(c.url))
+                  const isOpen = activeMega === item.title
+
+                  const subMeta: Record<string, { desc: string; Icon: React.ComponentType<any> }> = {
+                    "Visualizar Pedidos":  { desc: "Consulte todos os seus pedidos",        Icon: Eye },
+                    "Rastrear Pedidos":    { desc: "Acompanhe a entrega em tempo real",     Icon: Truck },
+                    "Visualizar Cotações": { desc: "Veja e gerencie suas cotações",         Icon: Eye },
+                    "Realizar Cotação":    { desc: "Crie uma nova cotação rapidamente",     Icon: Plus },
+                  }
 
                   return (
-                    <DropdownMenu key={item.title}>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          className={`group relative flex items-center gap-2 ${isLargeScreen ? "px-4 py-2.5" : "px-3 py-2"} text-sm font-medium rounded-2xl transition-all duration-300 whitespace-nowrap overflow-hidden ${isParentActive ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-${item.gradient.split("-")[1]}-500/25 transform scale-105` : `text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-gray-100/80 hover:to-gray-50/80 dark:hover:from-gray-800/80 dark:hover:to-gray-700/80 hover:scale-105 hover:shadow-md`}`}
-                        >
-                          {!isParentActive && (
-                            <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-2xl`} />
-                          )}
-                          <item.icon className={`w-4 h-4 flex-shrink-0 relative z-10 ${isParentActive ? "" : "group-hover:scale-110 transition-transform duration-300"}`} />
-                          <span className={`${isLargeScreen ? "block" : "hidden xl:block"} relative z-10`}>{item.title}</span>
-                          {isParentActive && <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-white/80" />}
-                          <ChevronDown className={`w-3 h-3 relative z-10 ${isParentActive ? "rotate-180" : "rotate-0"} transition-transform`} />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        side="bottom"
-                        align="start"
-                        className={`${isMobile ? "w-64" : isTablet ? "w-68" : "w-72"} bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200/60 dark:border-gray-700/60 rounded-2xl shadow-2xl shadow-gray-200/40 dark:shadow-gray-900/40 p-2 mt-2`}
+                    <div key={item.title} className="relative">
+                      <button
+                        onClick={() => setActiveMega(isOpen ? null : item.title)}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-150 outline-none
+                          ${isParentActive || isOpen
+                            ? `bg-gradient-to-r ${item.gradient} text-white shadow-md`
+                            : "text-foreground/80 hover:text-foreground hover:bg-muted"}`}
                       >
-                        {item.children.map((sub) => {
-                          const isActive = isActiveRoute(sub.url)
-                          return (
-                            <DropdownMenuItem key={sub.title} asChild>
-                              <a
-                                href={sub.url}
-                                target={sub.target || "_self"}
-                                rel={sub.target === "_blank" ? "noopener noreferrer" : undefined}
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  handleNavigation(sub.url, sub.target)
-                                }}
-                                className={`group flex items-center px-4 py-3 text-sm rounded-xl transition-all duration-300 mb-1 ${isActive ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg transform scale-[1.02]` : `hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-700/50 dark:hover:to-gray-600/50 hover:scale-[1.01] hover:shadow-md`} cursor-pointer block w-full`}
-                              >
-                                <div className="relative mr-3">
-                                  {sub.icon ? (
-                                    <sub.icon className={`w-5 h-5 ${isActive ? "text-white" : "text-blue-600 dark:text-blue-400"} transition-all duration-300 group-hover:scale-110`} />
-                                  ) : sub.title.includes("Visualizar") ? (
-                                    <Eye className={`w-5 h-5 ${isActive ? "text-white" : "text-blue-600 dark:text-blue-400"} transition-all duration-300 group-hover:scale-110`} />
-                                  ) : sub.title.includes("Realizar") ? (
-                                    <Plus className={`w-5 h-5 ${isActive ? "text-white" : "text-green-600 dark:text-green-400"} transition-all duration-300 group-hover:scale-110 group-hover:rotate-90`} />
-                                  ) : null}
-                                </div>
-                                <div className="flex-1">
-                                  <div className={`font-medium ${isActive ? "text-white" : "text-gray-900 dark:text-gray-100"} transition-colors`}>
-                                    {sub.title}
-                                  </div>
-                                  <div className={`text-xs mt-0.5 ${isActive ? "text-white/80" : "text-gray-500 dark:text-gray-400"} transition-colors`}>
-                                    {sub.title.includes("Visualizar") && "Consulte e gerencie suas cotações"}
-                                    {sub.title.includes("Realizar") && "Crie uma nova cotação rapidamente"}
-                                    {sub.title.includes("Rastrear") && "Acompanhe o status dos seus pedidos"}
-                                  </div>
-                                </div>
-                                <div className={`ml-2 transition-all duration-300 ${isActive ? "translate-x-1" : "translate-x-0 group-hover:translate-x-1"}`}>
-                                  <ChevronDown className={`w-4 h-4 rotate-[-90deg] ${isActive ? "text-white/80" : "text-gray-400 dark:text-gray-500"} transition-colors`} />
-                                </div>
-                                {isActive && <div className="absolute left-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white/30 rounded-full" />}
-                              </a>
-                            </DropdownMenuItem>
-                          )
-                        })}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        <item.icon className="w-4 h-4 shrink-0" />
+                        <span>{item.title}</span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                      </button>
+
+                      <AnimatePresence>
+                        {isOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                            className="absolute top-[calc(100%+8px)] left-0 z-[200] w-80 rounded-2xl border border-border bg-background shadow-2xl shadow-black/12 dark:shadow-black/40 overflow-hidden"
+                          >
+                            {/* Faixa de cor no topo */}
+                            <div className={`h-1 bg-gradient-to-r ${item.gradient}`} />
+
+                            {/* Sub-itens */}
+                            <div className="p-2 space-y-1">
+                              {item.children.map((sub, i) => {
+                                const isActive = isActiveRoute(sub.url)
+                                const meta = subMeta[sub.title]
+                                return (
+                                  <motion.button
+                                    key={sub.title}
+                                    initial={{ opacity: 0, x: -6 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    onClick={() => { handleNavigation(sub.url, sub.target); setActiveMega(null) }}
+                                    className={`group w-full flex items-center gap-3.5 px-3 py-3 rounded-xl text-left transition-all duration-150 active:scale-[0.98]
+                                      ${isActive
+                                        ? `bg-gradient-to-r ${item.gradient} shadow-sm`
+                                        : "hover:bg-muted"}`}
+                                  >
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors
+                                      ${isActive ? "bg-white/20" : "bg-muted group-hover:bg-background border border-border group-hover:border-border group-hover:shadow-sm"}`}
+                                    >
+                                      {meta?.Icon && <meta.Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-muted-foreground group-hover:text-foreground"} transition-colors`} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-sm font-semibold leading-tight ${isActive ? "text-white" : "text-foreground"}`}>{sub.title}</p>
+                                      <p className={`text-xs mt-0.5 ${isActive ? "text-white/70" : "text-muted-foreground"}`}>{meta?.desc}</p>
+                                    </div>
+                                    <ChevronDown className={`w-3.5 h-3.5 -rotate-90 shrink-0 transition-transform group-hover:translate-x-0.5 ${isActive ? "text-white/60" : "text-muted-foreground/40"}`} />
+                                  </motion.button>
+                                )
+                              })}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   )
                 }
 
@@ -449,14 +473,12 @@ export function NavegationMenu({
                   <Link
                     key={item.title}
                     to={item.url!}
-                    className={`group relative flex items-center gap-2 ${isLargeScreen ? "px-4 py-2.5" : "px-3 py-2"} text-sm font-medium rounded-2xl transition-all duration-300 whitespace-nowrap overflow-hidden ${isActive ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-${item.gradient.split("-")[1]}-500/25 transform scale-105` : "text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-gray-100/80 hover:to-gray-50/80 dark:hover:from-gray-800/80 dark:hover:to-gray-700/80 hover:scale-105 hover:shadow-md"}`}
+                    onClick={() => setActiveMega(null)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-150
+                      ${isActive ? `bg-gradient-to-r ${item.gradient} text-white shadow-md` : "text-foreground/80 hover:text-foreground hover:bg-muted"}`}
                   >
-                    {!isActive && (
-                      <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-2xl`} />
-                    )}
-                    <item.icon className={`w-4 h-4 flex-shrink-0 relative z-10 ${isActive ? "" : "group-hover:scale-110 transition-transform duration-300"}`} />
-                    <span className={`${isLargeScreen ? "block" : "hidden xl:block"} relative z-10`}>{item.title}</span>
-                    {isActive && <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-white/80 animate-pulse" />}
+                    <item.icon className="w-4 h-4 shrink-0" />
+                    <span>{item.title}</span>
                   </Link>
                 )
               })}
@@ -464,85 +486,39 @@ export function NavegationMenu({
 
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <ThemeToggle />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className={`flex items-center gap-1 sm:gap-2 ${isMobile ? "px-2 py-1.5" : "px-3 py-5"} rounded-2xl bg-gray-200/30 hover:bg-gradient-to-r hover:from-gray-100/80 hover:to-gray-50/80 dark:hover:from-gray-800/80 dark:hover:to-gray-700/80 transition-all duration-300 active:scale-95 min-w-0 shadow-sm border hover:shadow-md`}
-                  >
-                    <div className={`${getAvatarSize()} overflow-hidden rounded-full ring-2 ring-gray-200 dark:ring-gray-700 flex-shrink-0 transition-all duration-300 hover:ring-4`}>
+              {/* Trigger do perfil — mobile: só avatar; desktop: pill com nome */}
+              <button
+                onClick={() => setIsProfileOpen(true)}
+                aria-label="Perfil do usuário"
+                className={`group relative flex items-center transition-all duration-200 active:scale-95 outline-none
+                  ${isMobile
+                    ? "w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 justify-center"
+                    : "gap-2 pl-1 pr-3 py-1 rounded-full border border-border bg-background hover:shadow-md hover:border-primary/40"
+                  }`}
+              >
+                <div className="relative shrink-0">
+                  <div className="p-[2px] rounded-full bg-gradient-to-br from-primary via-blue-500 to-indigo-600">
+                    <div className={`${getAvatarSize()} overflow-hidden rounded-full bg-background`}>
                       <Avatar className="h-full w-full">
                         {avatarUrl ? (
-                          <AvatarImage src={avatarUrl || "/placeholder.svg"} alt="Avatar" className="h-full w-full object-cover" />
+                          <AvatarImage src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                         ) : (
-                          <AvatarFallback className="h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-                            <User2 className={`text-white ${isMobile ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
+                          <AvatarFallback className="h-full w-full flex items-center justify-center bg-primary/10">
+                            <span className="text-primary font-bold text-xs">
+                              {(userLogin || "U").charAt(0).toUpperCase()}
+                            </span>
                           </AvatarFallback>
                         )}
                       </Avatar>
                     </div>
-                    <span className={`hidden sm:block ${isMobile ? "text-xs" : "text-sm"} font-medium text-gray-700 dark:text-gray-200 truncate ${isMobile ? "max-w-16" : isTablet ? "max-w-24" : "max-w-32"}`}>
-                      {userLogin || "Usuário"}
-                    </span>
-                    <ChevronDown className={`${isMobile ? "w-3 h-3" : "w-4 h-4"} text-gray-500 transition-transform duration-300 hidden sm:block flex-shrink-0 group-hover:rotate-180`} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="bottom"
-                  align="end"
-                  className={`${isMobile ? "w-64" : isTablet ? "w-68" : "w-72"} bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200/60 dark:border-gray-700/60 rounded-2xl shadow-2xl shadow-gray-200/40 dark:shadow-gray-900/40 p-2 mt-2`}
-                >
-                  <DropdownMenuItem
-                    className={`flex items-center gap-3 ${isMobile ? "p-3" : "p-4"} rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 cursor-pointer outline-none transition-all duration-200`}
-                    onClick={openUserProfileModal}
-                  >
-                    <div className={`${getAvatarSizeLarge()} overflow-hidden rounded-full ring-2 ring-gray-200 dark:ring-gray-600 flex-shrink-0`}>
-                      <Avatar className="h-full w-full">
-                        {avatarUrl ? (
-                          <AvatarImage src={avatarUrl || "/placeholder.svg"} alt="Avatar" className="h-full w-full object-cover" />
-                        ) : (
-                          <AvatarFallback className="h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-                            <User2 className={`text-white ${isMobile ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                    </div>
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <span className={`${isMobile ? "text-sm" : "text-base"} font-semibold text-gray-900 dark:text-gray-100 truncate`}>
-                        {userLogin || "Usuário Desconhecido"}
-                      </span>
-                      <span className={`${isMobile ? "text-xs" : "text-sm"} text-gray-500 dark:text-gray-400 truncate`}>{userEmail}</span>
-                      <span className={`${isMobile ? "text-xs" : "text-xs"} text-blue-600 dark:text-blue-400 flex items-center gap-1 mt-1`}>
-                        Editar Perfil <Edit size={isMobile ? 10 : 12} />
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                  <div className="border-t border-gray-200/50 dark:border-gray-600/50 my-2"></div>
-                  <DropdownMenuItem
-                    className={`flex items-center gap-3 ${isMobile ? "p-2.5" : "p-3"} rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-700/80 cursor-pointer outline-none transition-all duration-200`}
-                    onClick={handlePasswordReset}
-                  >
-                    <div className={`${isMobile ? "p-1" : "p-1.5"} rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0`}>
-                      <Settings className={`${isMobile ? "w-3.5 h-3.5" : "w-4 h-4"} text-gray-600 dark:text-gray-300`} />
-                    </div>
-                    <span className={`${isMobile ? "text-sm" : "text-base"} text-gray-700 dark:text-gray-200 font-medium`}>Alterar senha</span>
-                  </DropdownMenuItem>
-                  <div className="border-t border-gray-200/50 dark:border-gray-600/50 my-2"></div>
-                  <DropdownMenuItem className="p-0 outline-none">
-                    <Button
-                      variant="ghost"
-                      onClick={handleLogout}
-                      disabled={isLoggingOut}
-                      className={`w-full justify-start gap-3 ${isMobile ? "p-2.5" : "p-3"} text-red-600 hover:text-red-700 hover:bg-red-50/80 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 rounded-lg transition-all duration-200`}
-                    >
-                      <div className={`${isMobile ? "p-1" : "p-1.5"} rounded-lg bg-red-100 dark:bg-red-900/30 flex-shrink-0`}>
-                        <LogOut className={`${isMobile ? "w-3.5 h-3.5" : "w-4 h-4"}`} />
-                      </div>
-                      <span className={`${isMobile ? "text-sm" : "text-base"} font-medium`}>{isLoggingOut ? "Saindo..." : "Sair"}</span>
-                    </Button>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border-[1.5px] border-background" />
+                </div>
+                <span className={`hidden sm:block text-sm font-semibold text-foreground truncate ${isTablet ? "max-w-20" : "max-w-28"}`}>
+                  {userLogin || "Usuário"}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground hidden sm:block shrink-0 transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`} />
+              </button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -558,71 +534,236 @@ export function NavegationMenu({
             </div>
           </div>
 
-          {isMobileMenuOpen && (
-            <div className="lg:hidden border-t border-gray-200/60 dark:border-gray-700/60 py-3 sm:py-4 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm">
-              <nav className="flex flex-col space-y-2">
-                {items.map((item) => {
-                  const isActive = isActiveRoute(item.url)
-                  if (item.children) {
-                    return (
-                      <div key={item.title} className="flex flex-col">
-                        <div
-                          className={`group relative flex items-center gap-3 ${isMobile ? "px-3 py-3" : "px-4 py-3.5"} rounded-2xl transition-all duration-300 active:scale-95 overflow-hidden ${item.children.some((c) => isActiveRoute(c.url)) ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-${item.gradient.split("-")[1]}-500/25 transform scale-[1.02]` : "text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-gray-100/80 hover:to-gray-50/80 dark:hover:from-gray-800/80 dark:hover:to-gray-700/80 hover:scale-[1.02] hover:shadow-md"}`}
-                        >
-                          {!item.children.some((c) => isActiveRoute(c.url)) && (
-                            <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-2xl`} />
-                          )}
-                          <div className="relative">
-                            <item.icon className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} flex-shrink-0 relative z-10 ${item.children.some((c) => isActiveRoute(c.url)) ? "animate-pulse" : "group-hover:scale-110 transition-transform duration-300"}`} />
-                          </div>
-                          <span className={`${isMobile ? "text-sm" : "text-base"} font-medium relative z-10`}>{item.title}</span>
-                          {item.children.some((c) => isActiveRoute(c.url)) && <Sparkles className="w-3 h-3 absolute top-2 right-2 text-white/80 animate-pulse" />}
-                        </div>
-                        <div className="ml-6 mt-1 flex flex-col space-y-1">
-                          {item.children.map((sub) => {
-                            const isSubActive = isActiveRoute(sub.url)
-                            return (
-                              <div
-                                key={sub.title}
-                                onClick={() => handleNavigation(sub.url, sub.target)}
-                                className={`flex items-center px-3 py-2 text-sm rounded-lg transition-all duration-200 cursor-pointer ${isSubActive ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg` : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+          <AnimatePresence>
+            {isMobileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="lg:hidden overflow-hidden border-t border-border/60"
+              >
+                <nav className="flex flex-col gap-1 p-3">
+                  {items.map((item) => {
+                    const isActive = isActiveRoute(item.url)
+
+                    if (item.children) {
+                      const isParentActive = item.children.some((c) => isActiveRoute(c.url))
+                      const mobileOpen = activeMega === item.title
+
+                      const subMeta: Record<string, { desc: string; Icon: React.ComponentType<any> }> = {
+                        "Visualizar Pedidos":  { desc: "Consulte todos os pedidos",         Icon: Eye },
+                        "Rastrear Pedidos":    { desc: "Rastreio em tempo real",            Icon: Truck },
+                        "Visualizar Cotações": { desc: "Veja suas cotações",                Icon: Eye },
+                        "Realizar Cotação":    { desc: "Nova cotação",                      Icon: Plus },
+                      }
+
+                      return (
+                        <div key={item.title}>
+                          <button
+                            onClick={() => setActiveMega(mobileOpen ? null : item.title)}
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-150 active:scale-[0.98]
+                              ${isParentActive || mobileOpen
+                                ? `bg-gradient-to-r ${item.gradient} text-white shadow-md`
+                                : "text-foreground hover:bg-muted"}`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isParentActive || mobileOpen ? "bg-white/20" : "bg-muted"}`}>
+                              <item.icon className="w-4 h-4" />
+                            </div>
+                            <span className="flex-1 font-medium text-sm">{item.title}</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileOpen ? "rotate-180" : ""}`} />
+                          </button>
+
+                          <AnimatePresence>
+                            {mobileOpen && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.18 }}
+                                className="overflow-hidden"
                               >
-                                {sub.icon ? (
-                                  <sub.icon className="w-4 h-4 mr-2" />
-                                ) : sub.title.includes("Visualizar") ? (
-                                  <Eye className="w-4 h-4 mr-2" />
-                                ) : sub.title.includes("Realizar") ? (
-                                  <Plus className="w-4 h-4 mr-2" />
-                                ) : null}
-                                {sub.title}
-                              </div>
-                            )
-                          })}
+                                <div className="mt-1 ml-3 pl-3 border-l-2 border-border space-y-1 pb-1">
+                                  {item.children.map((sub) => {
+                                    const isSubActive = isActiveRoute(sub.url)
+                                    const meta = subMeta[sub.title]
+                                    return (
+                                      <button
+                                        key={sub.title}
+                                        onClick={() => { handleNavigation(sub.url, sub.target); setIsMobileMenuOpen(false); setActiveMega(null) }}
+                                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all duration-150 active:scale-[0.98]
+                                          ${isSubActive ? `bg-gradient-to-r ${item.gradient} text-white shadow-sm` : "hover:bg-muted"}`}
+                                      >
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSubActive ? "bg-white/20" : "bg-muted"}`}>
+                                          {meta?.Icon && <meta.Icon className="w-3.5 h-3.5" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-semibold leading-tight">{sub.title}</p>
+                                          <p className={`text-xs mt-0.5 ${isSubActive ? "text-white/70" : "text-muted-foreground"}`}>{meta?.desc}</p>
+                                        </div>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
-                      </div>
+                      )
+                    }
+
+                    return (
+                      <Link
+                        key={item.title}
+                        to={item.url!}
+                        onClick={() => { setIsMobileMenuOpen(false); setActiveMega(null) }}
+                        className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-150 active:scale-[0.98]
+                          ${isActive ? `bg-gradient-to-r ${item.gradient} text-white shadow-md` : "text-foreground hover:bg-muted"}`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isActive ? "bg-white/20" : "bg-muted"}`}>
+                          <item.icon className="w-4 h-4" />
+                        </div>
+                        <span className="font-medium text-sm">{item.title}</span>
+                      </Link>
                     )
-                  }
-                  return (
-                    <Link
-                      key={item.title}
-                      to={item.url!}
-                      className={`group relative flex items-center gap-3 ${isMobile ? "px-3 py-3" : "px-4 py-3.5"} rounded-2xl transition-all duration-300 active:scale-95 overflow-hidden ${isActive ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg shadow-${item.gradient.split("-")[1]}-500/25 transform scale-[1.02]` : "text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-gray-100/80 hover:to-gray-50/80 dark:hover:from-gray-800/80 dark:hover:to-gray-700/80 hover:scale-[1.02] hover:shadow-md"}`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {!isActive && (
-                        <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-2xl`} />
-                      )}
-                      <item.icon className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} flex-shrink-0 relative z-10 ${isActive ? "animate-pulse" : "group/modal-hover:scale-110 transition-transform duration-300"}`} />
-                      <span className={`${isMobile ? "text-sm" : "text-base"} font-medium relative z-10`}>{item.title}</span>
-                      {isActive && <Sparkles className="w-3 h-3 absolute top-2 right-2 text-white/80" />}
-                    </Link>
-                  )
-                })}
-              </nav>
-            </div>
-          )}
+                  })}
+                </nav>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </header>
+
+
+      {/* ── Spotlight de perfil ────────────────────────────────── */}
+      <AnimatePresence>
+        {isProfileOpen && (
+          <>
+            {/* Backdrop com blur */}
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setIsProfileOpen(false)}
+              className="fixed inset-0 z-[150] bg-black/30 backdrop-blur-sm"
+            />
+
+            {/* Card central */}
+            <motion.div
+              key="card"
+              initial={{ opacity: 0, scale: 0.92, y: -16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: -8 }}
+              transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              className="fixed left-1/2 top-[80px] -translate-x-1/2 z-[151] w-full max-w-sm"
+            >
+              <div className="rounded-3xl overflow-hidden border border-border/60 bg-background shadow-2xl shadow-black/20 dark:shadow-black/50">
+
+                {/* Banner superior com identidade */}
+                <div className="relative px-6 pt-8 pb-6 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-blue-500/5 to-transparent" />
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent" />
+
+                  {/* Fechar */}
+                  <button
+                    onClick={() => setIsProfileOpen(false)}
+                    className="absolute top-4 right-4 w-7 h-7 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+
+                  <div className="relative flex flex-col items-center text-center gap-3">
+                    {/* Avatar grande */}
+                    <div className="relative">
+                      <div className="p-[3px] rounded-full bg-gradient-to-br from-primary via-blue-500 to-indigo-600 shadow-xl shadow-primary/30">
+                        <div className="h-20 w-20 overflow-hidden rounded-full bg-background ring-2 ring-background">
+                          <Avatar className="h-full w-full">
+                            {avatarUrl ? (
+                              <AvatarImage src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                            ) : (
+                              <AvatarFallback className="h-full w-full flex items-center justify-center bg-primary/10">
+                                <span className="text-primary font-bold text-3xl">
+                                  {(userLogin || "U").charAt(0).toUpperCase()}
+                                </span>
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                        </div>
+                      </div>
+                      <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-background shadow" />
+                    </div>
+
+                    {/* Nome e email */}
+                    <div>
+                      <h2 className="text-lg font-bold text-foreground leading-tight">{userLogin || "Usuário"}</h2>
+                      <p className="text-sm text-muted-foreground mt-0.5">{userEmail}</p>
+                    </div>
+
+                    {/* Badge sessão */}
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Sessão ativa</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ações em grade */}
+                <div className="px-4 pb-2 grid grid-cols-2 gap-2.5">
+                  <button
+                    onClick={() => { openUserProfileModal(); setIsProfileOpen(false); }}
+                    className="group flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-muted/40 hover:bg-primary/8 border border-border hover:border-primary/25 transition-all duration-150 active:scale-95"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-background border border-border group-hover:border-primary/30 group-hover:shadow-md flex items-center justify-center transition-all">
+                      <Edit className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-semibold text-foreground">Editar perfil</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Nome e foto</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => { handlePasswordReset(); setIsProfileOpen(false); }}
+                    className="group flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-muted/40 hover:bg-accent border border-border transition-all duration-150 active:scale-95"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center transition-all group-hover:shadow-md">
+                      <Settings className="w-4 h-4 text-muted-foreground group-hover:rotate-90 transition-transform duration-300" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-semibold text-foreground">Alterar senha</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Credenciais</p>
+                    </div>
+                  </button>
+                </div>
+
+                {/* Logout */}
+                <div className="px-4 pt-2 pb-4">
+                  <button
+                    onClick={() => { handleLogout(); setIsProfileOpen(false); }}
+                    disabled={isLoggingOut}
+                    className="group w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-950/50 hover:border-red-200 dark:hover:border-red-800/50 transition-all duration-150 active:scale-[0.98] disabled:opacity-60"
+                  >
+                    {isLoggingOut
+                      ? <span className="w-4 h-4 rounded-full border-2 border-red-400 border-t-transparent animate-spin" />
+                      : <LogOut className="w-4 h-4 text-red-500 group-hover:-translate-x-0.5 transition-transform" />
+                    }
+                    <span className="text-sm font-semibold text-red-600 dark:text-red-400">
+                      {isLoggingOut ? "Saindo..." : "Sair da conta"}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Rodapé */}
+                <div className="border-t border-border/50 px-4 py-2.5 bg-muted/20">
+                  <p className="text-[10px] text-muted-foreground/40 text-center tracking-wide">Portal Representantes · Polar Fix</p>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {isResetPasswordOpen && <ResetPassword closeModal={closeModal} />}
       <ProfileSelector

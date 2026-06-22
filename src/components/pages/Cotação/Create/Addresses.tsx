@@ -112,7 +112,7 @@ export function Addresses({
                   Endereço de Entrega
                 </CardTitle>
                 <p className="text-muted-foreground text-xs sm:text-sm leading-tight">
-                  Selecione um endereço do BP
+                  Selecione um endereço
                 </p>
               </div>
             </div>

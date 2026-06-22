@@ -72,6 +72,7 @@ export function QuotationForm() {
       listCode: 0,
       ShipDate: new Date().toISOString().split("T")[0],
       preco: 0,
+      U_SKILL_NP: undefined
     };
     setQuotation((prev) => ({
       ...prev,
